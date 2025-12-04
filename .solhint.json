@@ -5,6 +5,8 @@
     "func-visibility": ["warn", { "ignoreConstructors": true }],
     "compiler-fixed": false,
     "quotes": ["error", "single"],
-    "indent": [2]
-  }
+    "indent": [2],
+    "func-natspec": "off"
+  },
+  "ignorePatterns": ["tests/**/*.sol"]
 }

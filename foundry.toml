@@ -18,6 +18,10 @@ fs_permissions = [
 ]
 ffi = true
 
+# Linter configuration - ignore tests directory for NatSpec checks
+[linter]
+ignore = ["tests/**/*.sol"]
+
 [fuzz]
 runs = 1000
 max_test_rejects = 20000
