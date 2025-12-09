@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import 'forge-std/Test.sol';
 import {VmSafe} from 'forge-std/Base.sol';
 import {IAaveV3ConfigEngine} from '../../../src/contracts/extensions/v3-config-engine/IAaveV3ConfigEngine.sol';

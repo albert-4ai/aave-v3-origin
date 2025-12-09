@@ -113,7 +113,7 @@ contract BaseHandler is HookAggregator {
   function _mint(address token, address receiver, uint256 amount) internal {
     if (token == address(tokenList.weth)) {
       weth.deposit{value: amount}();
-      weth.transfer(receiver, amount);
+      require(weth.transfer(receiver, amount), 'transfer failed');
     } else {
       TestERC20 _token = TestERC20(token);
       _token.mint(receiver, amount);

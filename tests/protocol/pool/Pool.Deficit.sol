@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import 'forge-std/Test.sol';
 import 'forge-std/StdStorage.sol';
 
@@ -31,6 +33,8 @@ contract PoolDeficitTests is TestnetProcedures {
     uint256 currentDeficit = _createReserveDeficit(borrowAmount, tokenList.usdx);
 
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
 
     DataTypes.ReserveDataLegacy memory reserveData = contracts.poolProxy.getReserveData(
@@ -65,6 +69,8 @@ contract PoolDeficitTests is TestnetProcedures {
     uint256 currentDeficit = _createReserveDeficit(borrowAmount, tokenList.usdx);
 
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
 
     DataTypes.ReserveDataLegacy memory reserveData = contracts.poolProxy.getReserveData(
@@ -99,6 +105,8 @@ contract PoolDeficitTests is TestnetProcedures {
     uint256 currentDeficit = _createReserveDeficit(borrowAmount, tokenList.usdx);
 
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
 
     _mintATokens(tokenList.usdx, coverageAdmin, currentDeficit + 1000);
@@ -131,6 +139,8 @@ contract PoolDeficitTests is TestnetProcedures {
     amountToCover = uint120(bound(amountToCover, 1, currentDeficit));
 
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
 
     _mintATokens(tokenList.usdx, coverageAdmin, currentDeficit);
@@ -155,6 +165,8 @@ contract PoolDeficitTests is TestnetProcedures {
     cAdminBorrowAmount = uint120(bound(cAdminBorrowAmount, 1, currentDeficit / 2));
 
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
 
     _mintATokens(tokenList.usdx, coverageAdmin, currentDeficit);
@@ -187,6 +199,8 @@ contract PoolDeficitTests is TestnetProcedures {
     _createReserveDeficit(borrowAmount, tokenList.usdx);
 
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
 
     vm.startPrank(coverageAdmin);
@@ -198,6 +212,8 @@ contract PoolDeficitTests is TestnetProcedures {
     _filterAddresses(coverageAdmin);
 
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
 
     vm.startPrank(coverageAdmin);
@@ -209,6 +225,8 @@ contract PoolDeficitTests is TestnetProcedures {
   function test_interestRate() external {
     address coverageAdmin = makeAddr('covAdmin');
     vm.prank(poolAdmin);
+    // forge-lint: disable-next-line(unsafe-typecast)
+    // Casting string to bytes32 is safe for address identifiers
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), coverageAdmin);
     _mintATokens(tokenList.usdx, bob, 1_000_000 ether);
     vm.prank(bob);

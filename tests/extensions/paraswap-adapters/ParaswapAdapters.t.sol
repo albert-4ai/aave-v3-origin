@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import {ParaSwapLiquiditySwapAdapter} from '../../../src/contracts/extensions/paraswap-adapters/ParaSwapLiquiditySwapAdapter.sol';
 import {ParaSwapRepayAdapter, IParaSwapAugustusRegistry} from '../../../src/contracts/extensions/paraswap-adapters/ParaSwapRepayAdapter.sol';
 import {ParaSwapWithdrawSwapAdapter} from '../../../src/contracts/extensions/paraswap-adapters/ParaSwapWithdrawSwapAdapter.sol';

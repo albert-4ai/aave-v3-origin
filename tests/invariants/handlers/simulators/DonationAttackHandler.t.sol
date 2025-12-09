@@ -31,7 +31,7 @@ contract DonationAttackHandler is BaseHandler {
 
     _token.mint(address(this), amount);
 
-    _token.transfer(target, amount);
+    require(_token.transfer(target, amount), 'transfer failed');
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////

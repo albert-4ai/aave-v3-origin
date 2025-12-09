@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import 'forge-std/Test.sol';
 
 import {IERC20Metadata} from 'openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol';
@@ -225,7 +227,7 @@ contract ATokenRoundingTest is TestnetProcedures {
     // bob balance should be rounded down
     // 3 * (3e27 - 1) / 1e27 = 8.999999999999999999999999997
 
-    IAToken(aToken).transfer(bob, transferAmount);
+    require(IAToken(aToken).transfer(bob, transferAmount), 'transfer failed');
     vm.stopPrank();
 
     assertEq(IAToken(aToken).scaledBalanceOf(user), 0);
@@ -247,7 +249,7 @@ contract ATokenRoundingTest is TestnetProcedures {
     // 1 * (3e27 - 1) / 1e27 = 2.999999999999999999999999999
 
     vm.startPrank(bob);
-    IAToken(aToken).transfer(user, transferAmount);
+    require(IAToken(aToken).transfer(user, transferAmount), 'transfer failed');
 
     assertEq(IAToken(aToken).scaledBalanceOf(user), 2);
     assertEq(IAToken(aToken).balanceOf(user), 5);

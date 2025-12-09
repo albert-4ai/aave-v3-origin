@@ -174,7 +174,7 @@ contract Setup is BaseTest, DefaultMarketInput {
       for (uint256 j = 0; j < tokens.length; j++) {
         if (tokens[j] == address(tokenList.weth)) {
           weth.deposit{value: INITIAL_BALANCE}();
-          weth.transfer(_actor, INITIAL_BALANCE);
+          require(weth.transfer(_actor, INITIAL_BALANCE), 'transfer failed');
         } else {
           TestnetERC20 _token = TestnetERC20(tokens[j]);
           _token.mint(_actor, INITIAL_BALANCE);

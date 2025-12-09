@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import {MockAggregator} from '../../src/contracts/mocks/oracle/CLAggregators/MockAggregator.sol';
 import {RewardsController} from '../../src/contracts/rewards/RewardsController.sol';
 import {EmissionManager} from '../../src/contracts/rewards/EmissionManager.sol';

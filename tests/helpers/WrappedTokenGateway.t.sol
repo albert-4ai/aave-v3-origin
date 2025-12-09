@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import 'forge-std/Test.sol';
 import {AaveOracle} from '../../src/contracts/misc/AaveOracle.sol';
 import {WrappedTokenGatewayV3} from '../../src/contracts/helpers/WrappedTokenGatewayV3.sol';
@@ -449,7 +451,7 @@ contract WrappedTokenGatewayTests is TestnetProcedures {
     assertEq(usdx.balanceOf(alice), mintSize, 'The user balance should reflect the minted size');
 
     vm.prank(alice);
-    usdx.transfer(address(wrappedTokenGatewayV3), mintSize);
+    require(usdx.transfer(address(wrappedTokenGatewayV3), mintSize), 'transfer failed');
 
     assertEq(
       usdx.balanceOf(alice),

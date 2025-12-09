@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import 'forge-std/Test.sol';
 
 import {IAToken, IERC20} from '../../../src/contracts/interfaces/IAToken.sol';
@@ -75,7 +77,7 @@ contract ATokenTransferFromTests is TestnetProcedures {
     uint256 senderBalanceBefore = aToken.balanceOf(sender);
 
     vm.prank(sender);
-    aToken.transferFrom(owner, sender, amount);
+    require(aToken.transferFrom(owner, sender, amount), 'transferFrom failed');
 
     uint256 ownerScaledBalanceAfter = aToken.scaledBalanceOf(owner);
     uint256 ownerAllowanceAfter = aToken.allowance(owner, sender);

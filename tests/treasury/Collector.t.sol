@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import {Test} from 'forge-std/Test.sol';
 import {StdUtils} from 'forge-std/StdUtils.sol';
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import 'forge-std/Test.sol';
 
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
@@ -768,6 +770,8 @@ contract ATokenDelegationTest is TestnetProcedures {
 
     uint256 POWER_SCALE_FACTOR = aToken.POWER_SCALE_FACTOR();
 
+    // forge-lint: disable-next-line(divide-before-multiply)
+    // This is intentional: we want to round down to the nearest POWER_SCALE_FACTOR multiple
     return (scaledBalance / POWER_SCALE_FACTOR) * POWER_SCALE_FACTOR;
   }
 }

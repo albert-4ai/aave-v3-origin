@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+/* solhint-disable */
+
 import 'forge-std/Test.sol';
 
 import {IAToken, IERC20} from '../../../src/contracts/interfaces/IAToken.sol';
@@ -70,7 +72,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, alice, 120e6);
 
     vm.prank(alice);
-    aToken.transfer(alice, 120e6);
+    require(aToken.transfer(alice, 120e6), 'transfer failed');
   }
 
   function test_atoken_alice_transfer_to_herself_zero() public {
@@ -78,7 +80,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, alice, 0);
 
     vm.prank(alice);
-    aToken.transfer(alice, 0);
+    require(aToken.transfer(alice, 0), 'transfer failed');
   }
 
   function test_atoken_alice_transfer_to_bob() public {
@@ -91,7 +93,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IPool.ReserveUsedAsCollateralEnabled(tokenList.usdx, bob);
 
     vm.prank(alice);
-    aToken.transfer(bob, transferAmount);
+    require(aToken.transfer(bob, transferAmount), 'transfer failed');
 
     (uint256 bobCollateralBalance, , , , , , , , ) = contracts
       .protocolDataProvider
@@ -122,7 +124,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IPool.ReserveUsedAsCollateralEnabled(tokenList.usdx, bob);
 
     vm.prank(alice);
-    aToken.transfer(bob, transferAmount);
+    require(aToken.transfer(bob, transferAmount), 'transfer failed');
 
     assertEq(
       aToken.balanceOf(bob),
@@ -138,7 +140,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, bob, 0);
 
     vm.prank(alice);
-    aToken.transfer(bob, 0);
+    require(aToken.transfer(bob, 0), 'transfer failed');
 
     (uint256 bobCollateralBalance, , , , , , , , ) = contracts
       .protocolDataProvider
@@ -151,19 +153,19 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, bob, 10_000e6);
 
     vm.prank(alice);
-    aToken.transfer(bob, 10_000e6);
+    require(aToken.transfer(bob, 10_000e6), 'transfer failed');
 
     vm.expectEmit(address(aToken));
     emit IERC20.Transfer(bob, alice, 444e6);
 
     vm.prank(bob);
-    aToken.transfer(alice, 444e6);
+    require(aToken.transfer(alice, 444e6), 'transfer failed');
 
     vm.expectEmit(address(aToken));
     emit IERC20.Transfer(bob, carol, 555e6);
 
     vm.prank(bob);
-    aToken.transfer(carol, 555e6);
+    require(aToken.transfer(carol, 555e6), 'transfer failed');
   }
 
   function test_atoken_transfer_to_bob_them_bob_borrows() public {
@@ -172,7 +174,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, bob, transferAmount);
 
     vm.prank(alice);
-    aToken.transfer(bob, transferAmount);
+    require(aToken.transfer(bob, transferAmount), 'transfer failed');
 
     (uint256 bobCollateralBalance, , , , , , , , ) = contracts
       .protocolDataProvider
@@ -192,7 +194,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, bob, 50_000e6);
 
     vm.prank(alice);
-    aToken.transfer(bob, 50_000e6);
+    require(aToken.transfer(bob, 50_000e6), 'transfer failed');
 
     vm.prank(bob);
     contracts.poolProxy.borrow(tokenList.wbtc, 1e8, 2, 0, bob);
@@ -203,6 +205,8 @@ contract ATokenTransferTests is TestnetProcedures {
       abi.encodeWithSelector(Errors.HealthFactorLowerThanLiquidationThreshold.selector)
     );
     vm.prank(bob);
+    // forge-lint: disable-next-line(erc20-unchecked-transfer)
+    // Test expects revert - checking return value would interfere with expected revert
     aToken.transfer(alice, transferAmount);
   }
 
@@ -211,7 +215,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, bob, 50_000e6);
 
     vm.prank(alice);
-    aToken.transfer(bob, 50_000e6);
+    require(aToken.transfer(bob, 50_000e6), 'transfer failed');
 
     (uint256 bobCollateralBalance, , , , , , , , ) = contracts
       .protocolDataProvider
@@ -233,7 +237,7 @@ contract ATokenTransferTests is TestnetProcedures {
       .getUserReserveData(tokenList.usdx, carol);
 
     vm.prank(bob);
-    aToken.transfer(carol, transferAmount);
+    require(aToken.transfer(carol, transferAmount), 'transfer failed');
 
     (uint256 carolCollateralBalance, , , , , , , , ) = contracts
       .protocolDataProvider
@@ -269,7 +273,7 @@ contract ATokenTransferTests is TestnetProcedures {
     emit IERC20.Transfer(alice, carol, transferAmount);
 
     vm.prank(alice);
-    aToken.transfer(carol, transferAmount);
+    require(aToken.transfer(carol, transferAmount), 'transfer failed');
 
     (uint256 carolCollateralBalance, , , , , , , , ) = contracts
       .protocolDataProvider
@@ -307,7 +311,7 @@ contract ATokenTransferTests is TestnetProcedures {
     vm.warp(vm.getBlockTimestamp() + timePassed);
     // transfer the usdx
     vm.prank(alice);
-    aToken.transfer(mockReceiver, amount);
+    require(aToken.transfer(mockReceiver, amount), 'transfer failed');
 
     // check flag correctness
     (uint256 collateralBalance, , , , , , , , bool collateralEnabled) = contracts
