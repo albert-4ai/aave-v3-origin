@@ -16,7 +16,7 @@ downloads/
 # editors
 .idea
 .vscode
-.cursor/*
+# .cursor/*
 lcov*
 
 yarn.lock

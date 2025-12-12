@@ -1,0 +1,418 @@
+---
+description: Aave V3.5 项目开发规范 - 代码风格、安全实践、代码风格、测试要求和团队协作规范
+alwaysApply: false
+---
+# Aave V3.5 项目开发规范
+
+## 🛠️ 技术栈
+
+### 核心配置
+- **Solidity 版本**: `^0.8.10` 或 `^0.8.27`（根据合约而定）
+- **EVM 版本**: `shanghai` (默认), `cancun` (zksync), `london` (linea)
+- **编译器优化**: 200 runs
+- **框架**: Foundry (forge, cast, anvil)
+- **许可证**: `BUSL-1.1` (核心合约) 或 `MIT` (工具合约)
+
+### 开发工具
+- **代码格式化**: `forge fmt`
+- **测试框架**: Foundry Test
+- **模糊测试**: Foundry Fuzzing (默认 1000 runs)
+- **不变性测试**: Foundry Invariant Testing
+
+---
+
+## 📐 Solidity 代码规范
+
+### 文件头部
+```solidity
+// SPDX-License-Identifier: BUSL-1.1  // 或 MIT
+pragma solidity ^0.8.10;  // 或 ^0.8.27
+```
+
+### 导入顺序
+1. OpenZeppelin 合约
+2. 项目依赖 (`dependencies/`)
+3. 项目接口 (`interfaces/`)
+4. 项目库 (`libraries/`)
+5. 项目工具 (`helpers/`, `misc/`)
+6. 项目类型定义 (`types/`)
+
+```solidity
+// 1. OpenZeppelin
+import {Context} from 'openzeppelin-contracts/contracts/utils/Context.sol';
+import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
+
+// 2. 项目依赖
+import {GPv2SafeERC20} from '../../../dependencies/gnosis/contracts/GPv2SafeERC20.sol';
+
+// 3. 项目接口
+import {IPool} from '../../../interfaces/IPool.sol';
+import {IAToken} from '../../../interfaces/IAToken.sol';
+
+// 4. 项目库
+import {Errors} from '../helpers/Errors.sol';
+import {ReserveLogic} from './ReserveLogic.sol';
+import {DataTypes} from '../types/DataTypes.sol';
+```
+
+### 命名约定
+
+#### 合约和接口
+- **合约**: `PascalCase` (如 `Pool`, `PoolStorage`, `SupplyLogic`)
+- **接口**: `I` + `PascalCase` (如 `IPool`, `IAToken`, `IACLManager`)
+- **抽象合约**: `PascalCase` + `Base` 后缀 (如 `DebtTokenBase`, `IncentivizedERC20`)
+- **库合约**: `PascalCase` + `Logic` 或 `Math` 后缀 (如 `SupplyLogic`, `WadRayMath`)
+
+#### 变量和函数
+- **状态变量**: `camelCase`，私有变量加下划线前缀 (如 `_reserves`, `_userState`)
+- **函数**: `camelCase` (如 `supply`, `withdraw`, `executeSupply`)
+- **常量**: `UPPER_SNAKE_CASE` (如 `UMBRELLA`, `DELEGATION_WITH_SIG_TYPEHASH`)
+- **不可变变量**: `UPPER_SNAKE_CASE` (如 `ADDRESSES_PROVIDER`, `POOL`)
+
+#### 事件和错误
+- **事件**: `PascalCase`，动词开头 (如 `Supply`, `Borrow`, `Repay`, `LiquidationCall`)
+- **错误**: 使用 `Errors` 库中的错误，或自定义 `error` (如 `ERC20InsufficientAllowance`)
+
+### 可见性和数据位置
+- **函数可见性**: 明确标注 `public`, `external`, `internal`, `private`
+  - `external`: 仅外部调用（Gas 优化）
+  - `public`: 支持内部和外部调用
+  - `internal`: 内部和继承合约调用
+  - `private`: 仅当前合约调用
+- **数据位置**: 明确使用 `memory`, `storage`, `calldata`
+  - `calldata`: 外部函数参数（只读，Gas 最优）
+  - `memory`: 临时数据
+  - `storage`: 持久化存储引用
+
+### 合约结构顺序
+```solidity
+contract ExampleContract {
+    // 1. 使用声明
+    using ReserveLogic for DataTypes.ReserveData;
+    using GPv2SafeERC20 for IERC20;
+    
+    // 2. 常量
+    bytes32 public constant UMBRELLA = 'UMBRELLA';
+    
+    // 3. 不可变变量
+    IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
+    
+    // 4. 状态变量
+    mapping(address => DataTypes.ReserveData) internal _reserves;
+    
+    // 5. 修饰符
+    modifier onlyPoolConfigurator() {
+        _onlyPoolConfigurator();
+        _;
+    }
+    
+    // 6. 构造函数
+    constructor(IPoolAddressesProvider provider) {
+        ADDRESSES_PROVIDER = provider;
+    }
+    
+    // 7. 外部函数
+    function supply(...) external virtual override {
+        // ...
+    }
+    
+    // 8. 公共函数
+    function getReserveData(...) public view returns (...) {
+        // ...
+    }
+    
+    // 9. 内部函数
+    function _onlyPoolConfigurator() internal view {
+        // ...
+    }
+    
+    // 10. 私有函数
+    function _privateFunction() private {
+        // ...
+    }
+}
+```
+
+### 库合约模式
+```solidity
+library SupplyLogic {
+    using ReserveLogic for DataTypes.ReserveCache;
+    using GPv2SafeERC20 for IERC20;
+    
+    function executeSupply(
+        mapping(address => DataTypes.ReserveData) storage reservesData,
+        mapping(uint256 => address) storage reservesList,
+        DataTypes.UserConfigurationMap storage userConfig,
+        DataTypes.ExecuteSupplyParams memory params
+    ) external {
+        // 实现逻辑
+    }
+}
+```
+
+---
+
+## 🔒 安全最佳实践
+
+### 访问控制
+- **使用修饰符**: 所有需要权限的函数使用 `modifier`
+- **内部验证函数**: 将验证逻辑提取到内部函数，便于重用
+
+```solidity
+modifier onlyPoolConfigurator() {
+    _onlyPoolConfigurator();
+    _;
+}
+
+function _onlyPoolConfigurator() internal view {
+    require(
+        ADDRESSES_PROVIDER.getPoolConfigurator() == _msgSender(),
+        Errors.CallerNotPoolConfigurator()
+    );
+}
+```
+
+### 输入验证
+- **使用 Errors 库**: 统一错误定义，Gas 优化
+- **零地址检查**: 构造函数和关键函数中检查零地址
+- **使用自定义错误**: 替代字符串错误（Gas 优化）
+
+```solidity
+import {Errors} from '../helpers/Errors.sol';
+
+constructor(IPoolAddressesProvider provider) {
+    require(address(provider) != address(0), Errors.ZeroAddressNotValid());
+    ADDRESSES_PROVIDER = provider;
+}
+```
+
+### 重入攻击防护
+- **Checks-Effects-Interactions**: 先检查，再更新状态，最后外部调用
+- **避免循环中的外部调用**: 可能导致 Gas 耗尽
+
+```solidity
+// ✅ 正确顺序
+function withdraw(uint256 amount) external {
+    // 1. Checks
+    require(balance >= amount, Errors.InsufficientBalance());
+    
+    // 2. Effects
+    balances[msg.sender] -= amount;
+    
+    // 3. Interactions
+```
+
+Interactions
+    IERC20(token).transfer(msg.sender, amount);
+}
+```
+
+### 精度和数学运算
+- **使用 WadRayMath**: 所有精度计算使用 `WadRayMath` 库
+- **使用 SafeCast**: 类型转换时使用 OpenZeppelin 的 `SafeCast`
+
+```solidity
+using WadRayMath for uint256;
+using SafeCast for uint256;
+
+uint256 result = principal.rayMul(rate);  // 使用 rayMul 进行精确计算
+uint128 scaledAmount = amount.toUint128();  // 使用 SafeCast 进行类型转换
+```
+
+### Gas 优化
+- **Storage 缓存**: 减少 SLOAD 操作
+- **Immutable 变量**: 构造函数参数使用 `immutable`
+- **Unchecked 块**: 对已知安全的算术运算使用 `unchecked`
+
+```solidity
+// Storage 缓存示例
+DataTypes.ReserveCache memory reserveCache = reserve.cache();  // 缓存一次，多次使用
+reserveCache.updateState();
+reserveCache.updateInterestRates();
+```
+
+### 精度和数学运算
+- **使用 WadRayMath**: 所有精度计算使用 `WadRayMath` 库
+- **使用 SafeCast**: 类型转换时使用 OpenZeppelin 的 `SafeCast`
+
+```solidity
+using WadRayMath for uint256;
+using SafeCast for uint256;
+
+uint256 result = principal.rayMul(rate);  // 使用 rayMul 进行精确计算
+uint128 scaledAmount = amount.toUint128();  // 使用 SafeCast 进行类型转换
+```
+
+---
+
+## 📁 代码组织
+
+### 目录结构
+```
+src/contracts/
+├── dependencies/          # 外部依赖（OpenZeppelin, Gnosis 等）
+├── interfaces/           # 接口定义（I 开头）
+├── protocol/             # 核心协议逻辑
+│   ├── pool/            # Pool 合约
+│   ├── libraries/       # 库函数
+│   │   ├── logic/       # 业务逻辑库（SupplyLogic, BorrowLogic 等）
+│   │   ├── math/        # 数学库（WadRayMath, PercentageMath）
+│   │   ├── configuration/ # 配置库（ReserveConfiguration）
+│   │   └── helpers/     # 辅助库（Errors, TokenMath）
+│   ├── tokenization/    # Token 化合约（AToken, DebtToken）
+│   └── configuration/   # 配置合约（PoolAddressesProvider, ACLManager）
+├── misc/                # 其他合约（Oracle, Upgradeability）
+├── helpers/             # 辅助合约（WrappedTokenGateway）
+├── rewards/             # 奖励相关合约
+├── treasury/            # 资金库合约
+└── extensions/          # 扩展功能
+    ├── stata-token/     # Stata Token
+    └── v3-config-engine/ # 配置引擎
+```
+
+### 文件命名规范
+- **合约文件**: `PascalCase.sol` (如 `Pool.sol`, `PoolStorage.sol`)
+- **接口文件**: `I` + `PascalCase.sol` (如 `IPool.sol`, `IAToken.sol`)
+- **库文件**: `PascalCase` + `Logic.sol` 或 `Math.sol` (如 `SupplyLogic.sol`, `WadRayMath.sol`)
+- **测试文件**: `ContractName.TestName.t.sol` (如 `Pool.Supply.t.sol`)
+
+---
+
+## 🧪 测试规范
+
+### 测试文件结构
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.27;
+
+import {Test} from 'forge-std/Test.sol';
+import {ProtocolV3TestBase} from 'tests/utils/ProtocolV3TestBase.sol';
+import {IPool} from 'src/contracts/interfaces/IPool.sol';
+
+contract PoolSupplyTest is ProtocolV3TestBase {
+    function setUp() public {
+        _setUp();  // 初始化测试环境
+    }
+    
+    function test_Supply_Success() public {
+        // 测试逻辑
+    }
+    
+    function test_Supply_RevertWhen_InvalidAsset() public {
+        vm.expectRevert(Errors.InvalidAsset());
+        // 测试逻辑
+    }
+    
+    function testFuzz_Supply(uint256 amount) public {
+        amount = bound(amount, 1, type(uint128).max);
+        // 模糊测试逻辑
+    }
+}
+```
+
+### 测试命名规范
+- **成功测试**: `test_FunctionName_Success()`
+- **错误测试**: `test_FunctionName_RevertWhen_Condition()`
+- **模糊测试**: `testFuzz_FunctionName(parameters)`
+- **Gas 测试**: `test_Gas_FunctionName()`
+
+### 测试命令
+```bash
+# 运行所有测试
+forge test
+
+# 运行特定测试文件
+forge test --match-path tests/protocol/pool/Pool.Supply.t.sol
+
+# 运行特定测试函数
+forge test --match-test test_Supply_Success
+
+# 运行模糊测试（更多运行次数）
+forge test --fuzz-runs 10000
+
+# 生成 Gas 报告
+forge test --gas-report
+
+# 显示详细输出
+forge test -vvvv
+```
+
+
+## 👥 团队协作规范
+
+### Git 工作流
+- **分支策略**:
+  - `main`: 主分支，稳定版本
+  - `develop`: 开发分支
+  - `feature/*`: 功能分支
+  - `fix/*`: 修复分支
+  - `test/*`: 测试相关分支
+
+### 提交信息规范
+遵循 Conventional Commits:
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Type**: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `perf`, `style`
+
+**Scope**: `pool`, `oracle`, `access-control`, `test`, `config`, `library`
+
+**示例**:
+```
+feat(pool): add KYC check in supply function
+
+Add KYC verification before allowing users to supply assets.
+
+Closes #123
+```
+
+### 提交前检查
+- [ ] 代码通过 `forge build`
+- [ ] 所有测试通过 `forge test`
+- [ ] 代码格式化通过 `forge fmt --check`
+- [ ] 没有引入新的安全漏洞
+
+### 代码审查检查清单
+- [ ] 代码符合项目规范
+- [ ] 所有测试通过
+- [ ] 测试覆盖率足够
+- [ ] 没有安全漏洞
+- [ ] 事件已正确添加
+- [ ] Gas 优化已考虑
+- [ ] 文档已更新
+
+---
+
+## ⚠️ 常见错误避免
+
+1. **不要直接修改存储布局** - 影响合约升级
+2. **不要忽略访问控制** - 所有关键函数必须有权限检查
+3. **不要忘记事件** - 所有状态变更应 emit 事件
+4. **不要硬编码地址** - 使用配置合约或参数
+5. **不要忽略精度** - 使用数学库进行精确计算
+6. **不要跳过测试** - 每个功能都需要测试覆盖
+7. **不要忽略 Gas 优化** - 考虑 Gas 成本
+8. **不要忘记多链兼容性** - 测试不同链的特性
+9. **不要使用 `tx.origin`** - 使用 `msg.sender`
+10. **不要在循环中执行外部调用** - 可能导致 Gas 耗尽
+
+---
+
+## 📚 参考资源
+
+### 项目结构
+- **核心协议**: `src/contracts/protocol/`
+- **接口定义**: `src/contracts/interfaces/`
+- **库函数**: `src/contracts/protocol/libraries/`
+- **测试文件**: `tests/`
+
+### 外部资源
+- **Foundry 文档**: https://book.getfoundry.sh/
+- **Aave 文档**: https://docs.aave.com/
+- **Solidity 文档**: https://docs.soliditylang.org/
+- **OpenZeppelin**: https://docs.openzeppelin.com/

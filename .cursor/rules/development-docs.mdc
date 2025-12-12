@@ -1,0 +1,378 @@
+---
+alwaysApply: true
+---
+# Aave V3.5 项目文档规范
+
+## 📝 代码注释（NatSpec）
+
+### 基本格式
+
+#### 合约级别注释
+```solidity
+/**
+ * @title Pool contract
+ * @author Aave
+ * @notice Main point of interaction with an Aave protocol's market
+ * - Users can:
+ *   # Supply
+ *   # Withdraw
+ *   # Borrow
+ *   # Repay
+ * @dev To be covered by a proxy contract, owned by the PoolAddressesProvider
+ * @dev All admin functions are callable by the PoolConfigurator contract
+ */
+abstract contract Pool {
+    // ...
+}
+```
+
+#### 库级别注释
+```solidity
+/**
+ * @title SupplyLogic library
+ * @author Aave
+ * @notice Implements the base logic for supply/withdraw
+ */
+library SupplyLogic {
+    // ...
+}
+```
+
+#### 接口级别注释
+```solidity
+/// @title IRevenueSplitter
+/// @notice Interface for RevenueSplitter contract
+/// @dev The `RevenueSplitter` is a state-less non-upgradeable contract that supports 2 recipients
+/// @dev Warning: For recipients, you can use any address, but preferable to use `Collector`
+interface IRevenueSplitter {
+    // ...
+}
+```
+
+### 函数注释规范
+
+#### 公共/外部函数
+```solidity
+/**
+ * @notice Implements the supply feature. Through `supply()`, users supply assets to the Aave protocol.
+ * @dev Emits the `Supply()` event.
+ * @dev In the first supply action, `ReserveUsedAsCollateralEnabled()` is emitted, if the asset can be enabled as collateral.
+ * @param reservesData The state of all the reserves
+ * @param reservesList The addresses of all the active reserves
+ * @param userConfig The user configuration mapping that tracks the supplied/borrowed assets
+ * @param params The additional parameters needed to execute the supply function
+ */
+function executeSupply(
+    mapping(address => DataTypes.ReserveData) storage reservesData,
+    mapping(uint256 => address) storage reservesList,
+    DataTypes.UserConfigurationMap storage userConfig,
+    DataTypes.ExecuteSupplyParams memory params
+) external {
+    // ...
+}
+```
+
+#### 接口函数注释
+```solidity
+/// @notice Split token balances in RevenueSplitter and transfer between two recipients
+/// @param tokens List of tokens to check balance and split amounts
+/// @dev Specs:
+///      - Does not revert if token balance is zero (no-op).
+///      - Rounds in favor of RECIPIENT_B (1 wei round).
+///      - Anyone can call this function anytime.
+function splitRevenue(IERC20[] memory tokens) external;
+```
+
+### NatSpec 标签说明
+
+#### 必需标签
+- `@title`: 合约/库/接口的简短标题
+- `@author`: 作者或团队名称（如 "Aave", "BGD Labs"）
+- `@notice`: 用户可见的简短描述（出现在 ABI 中）
+- `@dev`: 开发者说明，包含实现细节、警告、注意事项
+
+#### 可选标签
+- `@param <paramName> <description>`: 参数说明（函数必须有）
+- `@return <description>`: 返回值说明（有返回值时必须）
+- `@inheritdoc <contract>`: 继承父合约的文档
+- `@custom:security`: 安全相关说明
+- `@custom:warning`: 重要警告信息
+
+#### ⚠️ 测试文件例外
+**`tests/` 目录下的文件不需要遵循 NatSpec 规范**：
+- 测试函数（`test_*`）不需要 `@notice` 标签
+- 测试合约不需要 `@title`、`@author`、`@notice` 标签
+- 测试辅助函数可以根据需要添加注释，但不是必需的
+- 测试文件的主要目的是验证功能，函数名通常已经足够描述测试内容
+
+### 修饰符注释
+```solidity
+/**
+ * @dev Only pool configurator can call functions marked by this modifier.
+ */
+modifier onlyPoolConfigurator() {
+    _onlyPoolConfigurator();
+    _;
+}
+```
+
+### 错误定义注释
+```solidity
+/**
+ * @dev Withdraw amount exceeds available balance
+ */
+error BalanceExceeded();
+
+/**
+ * @dev Indicates a failure with the `spender`'s `allowance`.
+ * @param spender Address that may be allowed to operate on tokens
+ * @param allowance Amount of tokens a `spender` is allowed to operate with
+ * @param needed Minimum amount required to perform a transfer
+ */
+error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed);
+```
+
+### 事件注释
+```solidity
+/**
+ * @notice Emitted when the new stream is created
+ * @param streamId The identifier of the stream
+ * @param sender The address of the collector
+ * @param recipient The address towards which the money is streamed
+ * @param deposit The amount of money to be streamed
+ * @param tokenAddress The ERC20 token to use as streaming currency
+ * @param startTime The unix timestamp for when the stream starts
+ * @param stopTime The unix timestamp for when the stream stops
+ */
+event CreateStream(
+    uint256 indexed streamId,
+    address indexed sender,
+    address indexed recipient,
+    uint256 deposit,
+    address tokenAddress,
+    uint256 startTime,
+    uint256 stopTime
+);
+```
+
+### 行内注释规范
+```solidity
+// ✅ 好的注释：解释"为什么"而不是"是什么"
+// As aToken.mint rounds down the minted shares, we ensure an equivalent of <= params.amount shares is minted.
+bool isFirstSupply = IAToken(reserveCache.aTokenAddress).mint(...);
+
+// ✅ 好的注释：说明复杂逻辑
+// Update state before external calls to prevent reentrancy
+reserve.updateState(reserveCache);
+
+// ❌ 避免：显而易见的注释
+// Increment counter
+counter++;
+```
+
+### 注释语言
+- **公共接口和用户文档**: 使用英文（出现在 ABI 中）
+- **内部实现注释**: 可以使用中文或英文（根据团队习惯）
+- **一致性**: 同一文件内保持语言一致
+
+---
+
+## 📚 README 文档规范
+
+### README 文件位置
+- **扩展功能**: `src/contracts/extensions/<feature>/README.md`
+- **库和工具**: 重要库可以包含 README
+- **项目根目录**: `README.md` 包含项目概述
+
+### README 结构模板
+```markdown
+# Feature Name
+
+## Overview
+Brief description of what this feature/contract does.
+
+## Architecture
+High-level architecture explanation, optionally with diagrams.
+
+## Usage
+How to use this feature, with code examples.
+
+## Security Considerations
+Important security notes and warnings.
+
+## Limitations
+Known limitations and constraints.
+
+## Upgrade Notes
+If applicable, notes about upgrades and migrations.
+```
+
+### 实际示例（基于项目）
+```markdown
+## Aave v3 config engine
+
+![Config Engine Diagram](../../../../resources/configs-engine.svg)
+
+## What is the AaveV3ConfigEngine?
+
+The `AaveV3ConfigEngine` is a helper smart contract to abstract good practices when doing "admin" interactions with the Aave v3 protocol.
+
+## How to use the engine?
+
+The engine is not designed to be used directly when writing a payload, but through abstract contracts that we will call `Base Aave v3 Payloads`.
+
+## Security procedures
+
+For this project, the security procedures applied/being finished are:
+- The test suite of the codebase itself.
+- Certora audit/property checking for all the dynamics.
+```
+
+### README 编写要点
+- **清晰的结构**: 使用标题层级组织内容
+- **代码示例**: 提供实际可用的代码示例
+- **图表**: 使用 Mermaid 或 SVG 图表说明架构
+- **安全说明**: 明确标注安全注意事项和限制
+- **版本信息**: 如果适用，说明版本和升级路径
+
+---
+
+## 📖 Markdown 文档规范
+
+### 文档位置
+- **技术文档**: `docs/` 目录（版本特性文档）
+- **项目文档**: 根目录或相关目录的 `.md` 文件
+- **代码注释**: 与代码一起维护
+
+### Markdown 格式规范
+
+#### 标题层级
+```markdown
+# 一级标题（文档标题）
+## 二级标题（主要章节）
+### 三级标题（子章节）
+#### 四级标题（小节）
+```
+
+#### 代码块
+```markdown
+# Solidity 代码
+```solidity
+contract Example {
+    function example() external {}
+}
+```
+
+# Bash 命令
+```bash
+forge test
+```
+
+# 配置文件
+```toml
+[profile.default]
+solc = '0.8.27'
+```
+```
+
+#### 列表和表格
+```markdown
+## 无序列表
+- Item 1
+- Item 2
+  - Sub-item 2.1
+
+## 有序列表
+1. First step
+2. Second step
+
+## 表格
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Value 1  | Value 2  | Value 3  |
+```
+
+#### 强调和引用
+```markdown
+**重要信息**: 使用粗体强调关键点
+*斜体*: 用于强调或引用
+> 引用块: 用于引用其他文档或说明
+`代码片段`: 用于行内代码引用
+```
+
+### 文档结构最佳实践
+- **概述**: 文档开头说明目的和范围
+- **目录**: 长文档使用目录导航
+- **章节**: 使用清晰的章节划分
+- **示例**: 提供实际可运行的示例
+- **参考**: 链接到相关文档和资源
+
+---
+
+## 🔍 API 文档生成
+
+### 使用 NatSpec 生成 API 文档
+- **工具**: Solidity 编译器可以提取 NatSpec 注释
+- **格式**: 生成 JSON 格式的 ABI 和文档
+- **内容**: `@notice` 和 `@param` 会出现在生成的文档中
+
+### 文档完整性检查
+- [ ] 所有公共函数都有 `@notice` 和 `@param` 说明（**测试文件除外**）
+- [ ] 所有事件都有 `@notice` 和 `@param` 说明
+- [ ] 所有错误都有 `@dev` 说明
+- [ ] 复杂逻辑有行内注释
+- [ ] 安全相关函数有 `@custom:security` 或 `@dev` 警告
+
+**注意**：`tests/` 目录下的测试文件不需要遵循 NatSpec 规范，可以忽略相关的 lint 警告。
+
+---
+
+## ⚠️ 文档注意事项
+
+### 必须包含的信息
+1. **安全警告**: 所有涉及资金或权限的函数必须有安全说明
+2. **参数验证**: 说明参数的约束和验证规则
+3. **副作用**: 说明函数执行的外部调用和状态变更
+4. **Gas 成本**: 对于高 Gas 操作，可以添加说明
+
+### 避免的常见错误
+1. **过时注释**: 代码更新时同步更新注释
+2. **重复代码**: 注释不要简单重复代码内容
+3. **缺失参数说明**: 所有参数必须有 `@param` 说明
+4. **不一致的语言**: 保持注释语言一致
+5. **缺少返回值说明**: 有返回值的函数必须有 `@return`
+
+### 文档维护
+- **代码审查**: 审查时检查文档完整性
+- **更新同步**: 代码变更时同步更新文档
+- **版本控制**: 文档与代码一起版本控制
+- **定期审查**: 定期审查文档的准确性和完整性
+
+---
+## ⚠️ 常见错误避免
+
+1. **不要直接修改存储布局** - 影响合约升级
+2. **不要忽略访问控制** - 所有关键函数必须有权限检查
+3. **不要忘记事件** - 所有状态变更应 emit 事件
+4. **不要硬编码地址** - 使用配置合约或参数
+5. **不要忽略精度** - 使用数学库进行精确计算
+6. **不要跳过测试** - 每个功能都需要测试覆盖
+7. **不要忽略 Gas 优化** - 考虑 Gas 成本
+8. **不要忘记多链兼容性** - 测试不同链的特性
+
+---
+
+## 📚 参考资源
+
+### NatSpec 规范
+- **Solidity NatSpec**: https://docs.soliditylang.org/en/latest/natspec-format.html
+- **OpenZeppelin 文档风格**: https://docs.openzeppelin.com/
+
+### Markdown 资源
+- **Markdown 指南**: https://www.markdownguide.org/
+- **GitHub Flavored Markdown**: https://github.github.com/gfm/
+
+### 项目文档示例
+- **扩展功能 README**: `src/contracts/extensions/*/README.md`
+- **技术文档**: `docs/` 目录
+- **代码注释**: 参考 `src/contracts/protocol/pool/Pool.sol`

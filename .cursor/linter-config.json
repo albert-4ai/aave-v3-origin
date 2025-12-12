@@ -1,0 +1,12 @@
+{
+  "solidity": {
+    "linter": {
+      "enabled": false,
+      "ignore": ["tests/**/*.sol"],
+      "rules": {
+        "use-natspec": "off"
+      }
+    }
+  }
+}
+
