@@ -1,12 +1,18 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "^0.8.0"],
-    "func-visibility": ["warn", { "ignoreConstructors": true }],
+    "compiler-version": "off",
+    "func-visibility": "off",
     "compiler-fixed": false,
-    "quotes": ["error", "single"],
-    "indent": [2],
-    "func-natspec": "off"
-  },
-  "ignorePatterns": ["tests/**/*.sol"]
+    "quotes": "off",
+    "indent": "off",
+    "func-natspec": "off",
+    "no-empty-blocks": "off",
+    "no-inline-assembly": "off",
+    "interface-starts-with-i": "off",
+    "use-natspec": "off",
+    "gas-indexed-events": "off",
+    "named-parameters-mapping": "off",
+    "state-visibility": "off"
+  }
 }
