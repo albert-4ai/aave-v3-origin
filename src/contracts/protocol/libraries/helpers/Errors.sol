@@ -95,4 +95,6 @@ library Errors {
   error UserCannotHaveDebt(); // Thrown when a user tries to interact with a method that requires a position without debt
   error SelfLiquidation(); // Thrown when a user tries to liquidate themselves
   error CallerNotPositionManager(); // Thrown when the caller has not been enabled as a position manager of the on-behalf-of user
+  error CallerNotLiquidityAdmin(); // Caller is not authorized to supply borrowable assets (liquidity admin role required)
+  error CallerNotApprovedUser(); // Caller is not an approved user (approved user role required)
 }

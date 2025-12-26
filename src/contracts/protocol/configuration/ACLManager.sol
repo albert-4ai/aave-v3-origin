@@ -18,6 +18,8 @@ contract ACLManager is AccessControl, IACLManager {
   bytes32 public constant override FLASH_BORROWER_ROLE = keccak256('FLASH_BORROWER');
   bytes32 public constant override BRIDGE_ROLE = keccak256('BRIDGE');
   bytes32 public constant override ASSET_LISTING_ADMIN_ROLE = keccak256('ASSET_LISTING_ADMIN');
+  bytes32 public constant override LIQUIDITY_ADMIN_ROLE = keccak256('LIQUIDITY_ADMIN');
+  bytes32 public constant override APPROVED_USER_ROLE = keccak256('APPROVED_USER');
 
   IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
 
@@ -31,6 +33,8 @@ contract ACLManager is AccessControl, IACLManager {
     address aclAdmin = provider.getACLAdmin();
     require(aclAdmin != address(0), Errors.AclAdminCannotBeZero());
     _setupRole(DEFAULT_ADMIN_ROLE, aclAdmin);
+    // Set POOL_ADMIN_ROLE as the admin of APPROVED_USER_ROLE
+    _setRoleAdmin(APPROVED_USER_ROLE, POOL_ADMIN_ROLE);
   }
 
   /// @inheritdoc IACLManager
@@ -129,5 +133,35 @@ contract ACLManager is AccessControl, IACLManager {
   /// @inheritdoc IACLManager
   function isAssetListingAdmin(address admin) external view override returns (bool) {
     return hasRole(ASSET_LISTING_ADMIN_ROLE, admin);
+  }
+
+  /// @inheritdoc IACLManager
+  function addLiquidityAdmin(address admin) external override {
+    grantRole(LIQUIDITY_ADMIN_ROLE, admin);
+  }
+
+  /// @inheritdoc IACLManager
+  function removeLiquidityAdmin(address admin) external override {
+    revokeRole(LIQUIDITY_ADMIN_ROLE, admin);
+  }
+
+  /// @inheritdoc IACLManager
+  function isLiquidityAdmin(address admin) external view override returns (bool) {
+    return hasRole(LIQUIDITY_ADMIN_ROLE, admin);
+  }
+
+  /// @inheritdoc IACLManager
+  function addApprovedUser(address user) external override {
+    grantRole(APPROVED_USER_ROLE, user);
+  }
+
+  /// @inheritdoc IACLManager
+  function removeApprovedUser(address user) external override {
+    revokeRole(APPROVED_USER_ROLE, user);
+  }
+
+  /// @inheritdoc IACLManager
+  function isApprovedUser(address user) external view override returns (bool) {
+    return hasRole(APPROVED_USER_ROLE, user);
   }
 }

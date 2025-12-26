@@ -254,6 +254,7 @@ contract PoolRepayTests is TestnetProcedures {
     borrowAmount = uint128(bound(borrowAmount, 2, supplyAmount / 2));
     repayAmount = uint128(bound(repayAmount, 2, borrowAmount));
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.usdx, user, underlyingBalance);
     vm.startPrank(user);
 
@@ -319,6 +320,7 @@ contract PoolRepayTests is TestnetProcedures {
     borrowAmount = uint128(bound(borrowAmount, 2, supplyAmount / 2));
     repayAmount = uint128(bound(repayAmount, 2, borrowAmount));
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.usdx, user, underlyingBalance);
     vm.startPrank(user);
 
@@ -386,6 +388,7 @@ contract PoolRepayTests is TestnetProcedures {
     borrowAmount = uint128(bound(borrowAmount, 2, supplyAmount / 2));
     repayAmount = uint128(bound(repayAmount, 2, borrowAmount));
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.usdx, user, underlyingBalance);
     vm.startPrank(user);
 

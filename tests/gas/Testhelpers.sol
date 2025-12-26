@@ -31,6 +31,7 @@ contract Testhelpers is TestnetProcedures {
    * Supplies the specified amount of asset to the reserve.
    */
   function _supplyOnReserve(address user, uint256 amount, address asset) internal {
+    _grantUserRoles(user);
     vm.startPrank(user);
     deal(asset, user, amount);
     IERC20(asset).approve(report.poolProxy, amount);

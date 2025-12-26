@@ -87,6 +87,7 @@ contract PoolSupplyTests is TestnetProcedures {
     vm.assume(userPk != 0);
     vm.assume(supplyAmount != 0 && supplyAmount <= underlyingBalance);
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.wbtc, user, underlyingBalance);
 
     EIP712SigUtils.Permit memory permit = EIP712SigUtils.Permit({
@@ -136,6 +137,7 @@ contract PoolSupplyTests is TestnetProcedures {
     vm.assume(userPk != 0);
     vm.assume(supplyAmount != 0 && supplyAmount <= underlyingBalance);
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.wbtc, user, underlyingBalance);
 
     EIP712SigUtils.Permit memory permit = EIP712SigUtils.Permit({
@@ -181,6 +183,7 @@ contract PoolSupplyTests is TestnetProcedures {
     uint128 userPk = 0xB000;
     vm.assume(supplyAmount != 0 && valueInPermit < supplyAmount);
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.wbtc, user, supplyAmount);
 
     EIP712SigUtils.Permit memory permit = EIP712SigUtils.Permit({

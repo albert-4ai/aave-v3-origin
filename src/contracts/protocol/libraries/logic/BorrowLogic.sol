@@ -14,6 +14,7 @@ import {DataTypes} from '../types/DataTypes.sol';
 import {ValidationLogic} from './ValidationLogic.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
 import {IsolationModeLogic} from './IsolationModeLogic.sol';
+import {IACLManager} from '../../../interfaces/IACLManager.sol';
 
 /**
  * @title BorrowLogic library
@@ -39,13 +40,15 @@ library BorrowLogic {
    * @param eModeCategories The configuration of all the efficiency mode categories
    * @param userConfig The user configuration mapping that tracks the supplied/borrowed assets
    * @param params The additional parameters needed to execute the borrow function
+   * @param aclManager The ACL manager contract for permission checks
    */
   function executeBorrow(
     mapping(address => DataTypes.ReserveData) storage reservesData,
     mapping(uint256 => address) storage reservesList,
     mapping(uint8 => DataTypes.EModeCategory) storage eModeCategories,
     DataTypes.UserConfigurationMap storage userConfig,
-    DataTypes.ExecuteBorrowParams memory params
+    DataTypes.ExecuteBorrowParams memory params,
+    IACLManager aclManager
   ) external {
     DataTypes.ReserveData storage reserve = reservesData[params.asset];
     DataTypes.ReserveCache memory reserveCache = reserve.cache();
@@ -70,7 +73,9 @@ library BorrowLogic {
         oracle: params.oracle,
         userEModeCategory: params.userEModeCategory,
         priceOracleSentinel: params.priceOracleSentinel
-      })
+      }),
+      params.onBehalfOf,
+      aclManager
     );
 
     reserveCache.nextScaledVariableDebt = IVariableDebtToken(reserveCache.variableDebtTokenAddress)

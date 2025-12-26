@@ -183,6 +183,15 @@ contract Setup is BaseTest, DefaultMarketInput {
       actorAddresses.push(_actor);
     }
 
+    // Grant roles to all actors for supply and borrow operations
+    ACLManager aclManager = ACLManager(report.aclManager);
+    vm.startPrank(poolAdmin);
+    for (uint256 i; i < actorAddresses.length; i++) {
+      aclManager.addLiquidityAdmin(actorAddresses[i]);
+      aclManager.addApprovedUser(actorAddresses[i]);
+    }
+    vm.stopPrank();
+
     // Set umbrella
     contracts.poolAddressesProvider.setAddress(bytes32('UMBRELLA'), UMBRELLA);
   }

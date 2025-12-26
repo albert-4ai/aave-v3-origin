@@ -73,6 +73,7 @@ abstract contract BaseTest is TestnetProcedures {
   }
 
   function _fundAToken(uint256 assets, address receiver) internal {
+    _grantUserRoles(receiver);
     _fundUnderlying(assets, receiver);
     vm.startPrank(receiver);
     IERC20(underlying).approve(address(contracts.poolProxy), assets);

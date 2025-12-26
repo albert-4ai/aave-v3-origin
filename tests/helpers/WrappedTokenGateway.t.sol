@@ -28,6 +28,10 @@ contract WrappedTokenGatewayTests is TestnetProcedures {
   function setUp() public {
     initTestEnvironment(false);
 
+    // Grant roles to test users
+    _grantUserRoles(alice);
+    _grantUserRoles(bob);
+
     // Give eth to the users in order call the payable functions
     vm.deal(alice, 100e18);
     vm.deal(bob, 100e18);
@@ -38,6 +42,10 @@ contract WrappedTokenGatewayTests is TestnetProcedures {
       'WrappedTokenGateway missing at deployment'
     );
     wrappedTokenGatewayV3 = WrappedTokenGatewayV3(payable(report.wrappedTokenGateway));
+    
+    // Grant roles to WrappedTokenGateway contract itself (it acts as msg.sender when calling Pool)
+    _grantUserRoles(address(wrappedTokenGatewayV3));
+    
     contracts.protocolDataProvider = AaveProtocolDataProvider(report.protocolDataProvider);
     (address aWEthAddr, , address wEthVariableDebt) = contracts
       .protocolDataProvider

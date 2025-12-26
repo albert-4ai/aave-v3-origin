@@ -36,6 +36,11 @@ contract ATokenTransferTests is TestnetProcedures {
     aToken = IAToken(aUSDX);
     variableDebtToken = IVariableDebtToken(variableDebtWBTC);
 
+    // Grant roles to test users using helper function
+    _grantUserRoles(alice);
+    _grantUserRoles(bob);
+    _grantUserRoles(carol);
+
     // Perform setup of user positions
     uint256 mintAmount = 100_000e6;
     vm.startPrank(poolAdmin);

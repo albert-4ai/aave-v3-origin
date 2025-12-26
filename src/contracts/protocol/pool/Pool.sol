@@ -133,7 +133,8 @@ abstract contract Pool is VersionedInitializable, PoolStorage, IPool, Multicall 
         amount: amount,
         onBehalfOf: onBehalfOf,
         referralCode: referralCode
-      })
+      }),
+      IACLManager(ADDRESSES_PROVIDER.getACLManager())
     );
   }
 
@@ -170,7 +171,8 @@ abstract contract Pool is VersionedInitializable, PoolStorage, IPool, Multicall 
         amount: amount,
         onBehalfOf: onBehalfOf,
         referralCode: referralCode
-      })
+      }),
+      IACLManager(ADDRESSES_PROVIDER.getACLManager())
     );
   }
 
@@ -223,7 +225,8 @@ abstract contract Pool is VersionedInitializable, PoolStorage, IPool, Multicall 
         oracle: ADDRESSES_PROVIDER.getPriceOracle(),
         userEModeCategory: _usersEModeCategory[onBehalfOf],
         priceOracleSentinel: ADDRESSES_PROVIDER.getPriceOracleSentinel()
-      })
+      }),
+      IACLManager(ADDRESSES_PROVIDER.getACLManager())
     );
   }
 
@@ -797,7 +800,8 @@ abstract contract Pool is VersionedInitializable, PoolStorage, IPool, Multicall 
         amount: amount,
         onBehalfOf: onBehalfOf,
         referralCode: referralCode
-      })
+      }),
+      IACLManager(ADDRESSES_PROVIDER.getACLManager())
     );
   }
 

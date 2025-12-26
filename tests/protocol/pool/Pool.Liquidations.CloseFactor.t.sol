@@ -314,6 +314,7 @@ contract PoolLiquidationCloseFactorTests is TestnetProcedures {
   }
 
   function _supplyToPool(address erc20, address user, uint256 amount) internal {
+    _grantUserRoles(user);
     deal(erc20, user, amount);
     vm.startPrank(user);
     IERC20(erc20).approve(address(contracts.poolProxy), amount);

@@ -46,6 +46,7 @@ contract L2PoolTests is PoolTests {
     vm.assume(userPk != 0);
     vm.assume(supplyAmount != 0);
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.usdx, user, supplyAmount);
 
     EIP712SigUtils.Permit memory permit = EIP712SigUtils.Permit({
@@ -141,6 +142,7 @@ contract L2PoolTests is PoolTests {
     repayAmount = uint128(bound(repayAmount, 2, borrowAmount));
 
     address user = vm.addr(userPk);
+    _grantUserRoles(user);
     deal(tokenList.usdx, user, underlyingBalance);
     vm.startPrank(user);
 

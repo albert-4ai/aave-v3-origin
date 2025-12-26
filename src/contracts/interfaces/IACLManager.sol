@@ -172,4 +172,54 @@ interface IACLManager {
    * @return True if the given address is AssetListingAdmin, false otherwise
    */
   function isAssetListingAdmin(address admin) external view returns (bool);
+
+  /**
+   * @notice Returns the identifier of the LiquidityAdmin role
+   * @return The id of the LiquidityAdmin role
+   */
+  function LIQUIDITY_ADMIN_ROLE() external view returns (bytes32);
+
+  /**
+   * @notice Adds a new address as LiquidityAdmin
+   * @param admin The address of the new LiquidityAdmin
+   */
+  function addLiquidityAdmin(address admin) external;
+
+  /**
+   * @notice Removes an address as LiquidityAdmin
+   * @param admin The address of the LiquidityAdmin to remove
+   */
+  function removeLiquidityAdmin(address admin) external;
+
+  /**
+   * @notice Returns true if the address is LiquidityAdmin, false otherwise
+   * @param admin The address to check
+   * @return True if the given address is LiquidityAdmin, false otherwise
+   */
+  function isLiquidityAdmin(address admin) external view returns (bool);
+
+  /**
+   * @notice Returns the identifier of the ApprovedUser role
+   * @return The id of the ApprovedUser role
+   */
+  function APPROVED_USER_ROLE() external view returns (bytes32);
+
+  /**
+   * @notice Adds a new address as ApprovedUser
+   * @param user The address of the new ApprovedUser
+   */
+  function addApprovedUser(address user) external;
+
+  /**
+   * @notice Removes an address as ApprovedUser
+   * @param user The address of the ApprovedUser to remove
+   */
+  function removeApprovedUser(address user) external;
+
+  /**
+   * @notice Returns true if the address is ApprovedUser, false otherwise
+   * @param user The address to check
+   * @return True if the given address is ApprovedUser, false otherwise
+   */
+  function isApprovedUser(address user) external view returns (bool);
 }

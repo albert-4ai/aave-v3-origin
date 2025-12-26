@@ -145,6 +145,15 @@ contract TestnetProcedures is Test, DeployUtils, FfiUtils, DefaultMarketInput {
       users[1] = bob;
       users[2] = carol;
 
+      // Grant roles to test users for supply and borrow operations
+      ACLManager aclManager = ACLManager(report.aclManager);
+      vm.startPrank(roleList.poolAdmin);
+      for (uint256 x; x < users.length; x++) {
+        aclManager.addLiquidityAdmin(users[x]);
+        aclManager.addApprovedUser(users[x]);
+      }
+      vm.stopPrank();
+
       for (uint256 x; x < users.length; x++) {
         vm.startPrank(poolAdmin);
         usdx.mint(users[x], mintAmount_USDX);
@@ -405,6 +414,13 @@ contract TestnetProcedures is Test, DeployUtils, FfiUtils, DefaultMarketInput {
    * This helper function ensures it is enabled by performing the explicit action.
    */
   function _supplyAndEnableAsCollateral(address user, uint256 amount, address asset) internal {
+    // Grant both roles to ensure user can supply any asset type
+    ACLManager aclManager = ACLManager(report.aclManager);
+    vm.startPrank(roleList.poolAdmin);
+    aclManager.addLiquidityAdmin(user);
+    aclManager.addApprovedUser(user);
+    vm.stopPrank();
+
     vm.startPrank(user);
     deal(asset, user, amount);
     IERC20(asset).approve(report.poolProxy, amount);
@@ -434,5 +450,18 @@ contract TestnetProcedures is Test, DeployUtils, FfiUtils, DefaultMarketInput {
       );
     assertEq(reserveData.currentLiquidityRate, nextLiquidityRate, 'bad liquidity rate');
     assertEq(reserveData.currentVariableBorrowRate, nextVariableRate, 'bad debt rate');
+  }
+
+  /**
+   * @notice Grants both LIQUIDITY_ADMIN_ROLE and APPROVED_USER_ROLE to a user
+   * @dev This allows the user to supply any asset type and borrow
+   * @param user The address to grant roles to
+   */
+  function _grantUserRoles(address user) internal {
+    ACLManager aclManager = ACLManager(report.aclManager);
+    vm.startPrank(roleList.poolAdmin);
+    aclManager.addLiquidityAdmin(user);
+    aclManager.addApprovedUser(user);
+    vm.stopPrank();
   }
 }

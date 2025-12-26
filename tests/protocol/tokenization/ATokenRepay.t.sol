@@ -26,6 +26,10 @@ contract ATokenRepayTests is TestnetProcedures {
     aToken = IAToken(aUSDX);
     variableDebtToken = IVariableDebtTokenWithERC20(variableDebtUSDX);
 
+    // Grant roles to test users using helper function
+    _grantUserRoles(bob);
+    _grantUserRoles(alice);
+
     // Perform setup of user positions
     uint256 mintAmount = 100_000e6;
     vm.startPrank(poolAdmin);

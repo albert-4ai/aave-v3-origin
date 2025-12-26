@@ -9,6 +9,7 @@ import {IPool} from '../../../interfaces/IPool.sol';
 import {IFlashLoanReceiver} from '../../../misc/flashloan/interfaces/IFlashLoanReceiver.sol';
 import {IFlashLoanSimpleReceiver} from '../../../misc/flashloan/interfaces/IFlashLoanSimpleReceiver.sol';
 import {IPoolAddressesProvider} from '../../../interfaces/IPoolAddressesProvider.sol';
+import {IACLManager} from '../../../interfaces/IACLManager.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
 import {Errors} from '../helpers/Errors.sol';
 import {TokenMath} from '../helpers/TokenMath.sol';
@@ -140,7 +141,8 @@ library FlashLoanLogic {
             userEModeCategory: IPool(params.pool).getUserEMode(params.onBehalfOf).toUint8(),
             priceOracleSentinel: IPoolAddressesProvider(params.addressesProvider)
               .getPriceOracleSentinel()
-          })
+          }),
+          IACLManager(IPoolAddressesProvider(params.addressesProvider).getACLManager())
         );
         // no premium is paid when taking on the flashloan as debt
         emit IPool.FlashLoan(

@@ -312,6 +312,7 @@ contract PoolDeficitTests is TestnetProcedures {
 
   // we reinvent these helpers on each contract and should move them somewhere common
   function _mintATokens(address underlying, address receiver, uint256 amount) internal {
+    _grantUserRoles(receiver);
     deal(underlying, receiver, amount);
     vm.startPrank(receiver);
     IERC20(underlying).approve(address(contracts.poolProxy), amount);

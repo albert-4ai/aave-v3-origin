@@ -13,6 +13,7 @@ import {ValidationLogic} from './ValidationLogic.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
 import {TokenMath} from '../helpers/TokenMath.sol';
+import {IACLManager} from '../../../interfaces/IACLManager.sol';
 
 /**
  * @title SupplyLogic library
@@ -37,12 +38,14 @@ library SupplyLogic {
    * @param reservesList The addresses of all the active reserves
    * @param userConfig The user configuration mapping that tracks the supplied/borrowed assets
    * @param params The additional parameters needed to execute the supply function
+   * @param aclManager The ACL manager contract for permission checks
    */
   function executeSupply(
     mapping(address => DataTypes.ReserveData) storage reservesData,
     mapping(uint256 => address) storage reservesList,
     DataTypes.UserConfigurationMap storage userConfig,
-    DataTypes.ExecuteSupplyParams memory params
+    DataTypes.ExecuteSupplyParams memory params,
+    IACLManager aclManager
   ) external {
     DataTypes.ReserveData storage reserve = reservesData[params.asset];
     DataTypes.ReserveCache memory reserveCache = reserve.cache();
@@ -50,7 +53,14 @@ library SupplyLogic {
     reserve.updateState(reserveCache);
     uint256 scaledAmount = params.amount.getATokenMintScaledAmount(reserveCache.nextLiquidityIndex);
 
-    ValidationLogic.validateSupply(reserveCache, reserve, scaledAmount, params.onBehalfOf);
+    ValidationLogic.validateSupply(
+      reserveCache,
+      reserve,
+      scaledAmount,
+      params.onBehalfOf,
+      params.user,
+      aclManager
+    );
 
     reserve.updateInterestRatesAndVirtualBalance(
       reserveCache,

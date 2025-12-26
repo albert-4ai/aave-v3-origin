@@ -678,6 +678,8 @@ contract PoolFlashLoansTests is TestnetProcedures {
     MockFlashLoanBorrowInsideFlashLoan receiver = new MockFlashLoanBorrowInsideFlashLoan(
       contracts.poolAddressesProvider
     );
+    // Grant APPROVED_USER_ROLE to the receiver contract so it can borrow inside flashloan
+    _grantUserRoles(address(receiver));
 
     address asset = tokenList.usdx;
     uint256 underlyingBalance = contracts.poolProxy.getVirtualUnderlyingBalance(asset);
@@ -720,6 +722,8 @@ contract PoolFlashLoansTests is TestnetProcedures {
     MockFlashLoanBorrowInsideFlashLoan receiver = new MockFlashLoanBorrowInsideFlashLoan(
       contracts.poolAddressesProvider
     );
+    // Grant APPROVED_USER_ROLE to the receiver contract so it can borrow inside flashloan
+    _grantUserRoles(address(receiver));
 
     address[] memory assets = new address[](2);
     uint256[] memory underlyingBalances = new uint256[](2);

@@ -280,6 +280,7 @@ contract PoolEModeTests is TestnetProcedures {
   }
 
   function _supplyToPool(address erc20, address user, uint256 amount) internal {
+    _grantUserRoles(user);
     vm.startPrank(user);
     IERC20(erc20).approve(address(contracts.poolProxy), amount);
     contracts.poolProxy.supply(erc20, amount, user, 0);

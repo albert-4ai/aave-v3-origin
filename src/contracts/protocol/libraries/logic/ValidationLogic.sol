@@ -9,6 +9,7 @@ import {IAToken} from '../../../interfaces/IAToken.sol';
 import {IPriceOracleSentinel} from '../../../interfaces/IPriceOracleSentinel.sol';
 import {IPoolAddressesProvider} from '../../../interfaces/IPoolAddressesProvider.sol';
 import {IAccessControl} from '../../../dependencies/openzeppelin/contracts/IAccessControl.sol';
+import {IACLManager} from '../../../interfaces/IACLManager.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
 import {UserConfiguration} from '../configuration/UserConfiguration.sol';
 import {EModeConfiguration} from '../configuration/EModeConfiguration.sol';
@@ -61,20 +62,35 @@ library ValidationLogic {
    * @notice Validates a supply action.
    * @param reserveCache The cached data of the reserve
    * @param scaledAmount The scaledAmount to be supplied
+   * @param sender The address of the caller
+   * @param aclManager The ACL manager contract for permission checks
    */
   function validateSupply(
     DataTypes.ReserveCache memory reserveCache,
     DataTypes.ReserveData storage reserve,
     uint256 scaledAmount,
-    address onBehalfOf
+    address onBehalfOf,
+    address sender,
+    IACLManager aclManager
   ) internal view {
     require(scaledAmount != 0, Errors.InvalidAmount());
 
-    (bool isActive, bool isFrozen, , bool isPaused) = reserveCache.reserveConfiguration.getFlags();
+    (bool isActive, bool isFrozen, bool borrowingEnabled, bool isPaused) = reserveCache
+      .reserveConfiguration
+      .getFlags();
     require(isActive, Errors.ReserveInactive());
     require(!isPaused, Errors.ReservePaused());
     require(!isFrozen, Errors.ReserveFrozen());
     require(onBehalfOf != reserveCache.aTokenAddress, Errors.SupplyToAToken());
+
+    // Permission check based on asset type
+    if (borrowingEnabled) {
+      // Borrowable asset (e.g., USDC) - only liquidity admins (bank) can supply
+      require(aclManager.isLiquidityAdmin(sender), Errors.CallerNotLiquidityAdmin());
+    } else {
+      // Collateral-only asset (e.g., ETH, BTC) - only approved users can supply
+      require(aclManager.isApprovedUser(sender), Errors.CallerNotApprovedUser());
+    }
 
     uint256 supplyCap = reserveCache.reserveConfiguration.getSupplyCap();
     require(
@@ -131,13 +147,19 @@ library ValidationLogic {
    * @param reservesList The addresses of all the active reserves
    * @param eModeCategories The configuration of all the efficiency mode categories
    * @param params Additional params needed for the validation
+   * @param borrower The address of the user borrowing
+   * @param aclManager The ACL manager contract for permission checks
    */
   function validateBorrow(
     mapping(address => DataTypes.ReserveData) storage reservesData,
     mapping(uint256 => address) storage reservesList,
     mapping(uint8 => DataTypes.EModeCategory) storage eModeCategories,
-    DataTypes.ValidateBorrowParams memory params
+    DataTypes.ValidateBorrowParams memory params,
+    address borrower,
+    IACLManager aclManager
   ) internal view {
+    // Only approved users can borrow
+    require(aclManager.isApprovedUser(borrower), Errors.CallerNotApprovedUser());
     require(params.amountScaled != 0, Errors.InvalidAmount());
 
     ValidateBorrowLocalVars memory vars;

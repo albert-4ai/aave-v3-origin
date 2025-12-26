@@ -426,6 +426,7 @@ contract ERC4626StataTokenUpgradeableTest is TestnetProcedures {
 
     // borrow out some assets
     address borrowUser = address(99);
+    _grantUserRoles(borrowUser);
     vm.startPrank(borrowUser);
     deal(address(weth), borrowUser, 2_000 ether);
     weth.approve(address(contracts.poolProxy), 2_000 ether);
@@ -498,6 +499,7 @@ contract ERC4626StataTokenUpgradeableTest is TestnetProcedures {
   }
 
   function _fundAToken(uint256 assets, address receiver) internal {
+    _grantUserRoles(receiver);
     _fundUnderlying(assets, receiver);
     vm.startPrank(receiver);
     IERC20(underlying).approve(address(contracts.poolProxy), assets);

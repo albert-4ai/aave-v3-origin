@@ -9,7 +9,7 @@ import {DataTypes} from '../../src/contracts/protocol/libraries/types/DataTypes.
 import {IAToken, IERC20} from '../../src/contracts/interfaces/IAToken.sol';
 
 contract AaveSettersTest is TestnetProcedures {
-  address internal user = user;
+  address internal user;
 
   address internal asset;
   address internal aToken;
@@ -18,6 +18,7 @@ contract AaveSettersTest is TestnetProcedures {
   function setUp() external {
     initTestEnvironment();
 
+    user = alice;
     asset = tokenList.weth;
     aToken = contracts.poolProxy.getReserveAToken(asset);
     vToken = contracts.poolProxy.getReserveVariableDebtToken(asset);
