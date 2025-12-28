@@ -68,9 +68,9 @@ RPC_RESPONSE=$(curl -s --noproxy "*" -X POST -H "Content-Type: application/json"
 
 if echo "$RPC_RESPONSE" | grep -q "result"; then
     # JSON-RPC 调用成功，提取区块号
-    BLOCK_HEX=$(echo "$RPC_RESPONSE" | grep -oP '"result":"\K[^"]+' | head -1)
+    BLOCK_HEX=$(echo "$RPC_RESPONSE" | sed -n 's/.*"result":"\([^"]*\)".*/\1/p' | head -1)
     if [ -n "$BLOCK_HEX" ]; then
-        BLOCK_NUMBER=$(printf "%d" $BLOCK_HEX 2>/dev/null || echo "N/A")
+        BLOCK_NUMBER=$(python3 -c "print(int('$BLOCK_HEX', 16))" 2>/dev/null || echo "N/A")
         echo -e "${GREEN}✅ RPC 连接正常（区块: ${BLOCK_NUMBER}）${NC}"
         RPC_CONNECTED=true
     else
@@ -78,7 +78,7 @@ if echo "$RPC_RESPONSE" | grep -q "result"; then
         RPC_CHECK=$(cast block latest --rpc-url "$RPC_URL" 2>&1)
         RPC_ERROR=$?
         if [ $RPC_ERROR -eq 0 ] && [ -n "$RPC_CHECK" ] && ! echo "$RPC_CHECK" | grep -q "Error\|error\|ERROR"; then
-            BLOCK_NUMBER=$(echo "$RPC_CHECK" | head -1 | grep -oP 'number:\s*\K[0-9]+' || echo "N/A")
+            BLOCK_NUMBER=$(echo "$RPC_CHECK" | head -1 | sed -n 's/.*number:[[:space:]]*\([0-9]*\).*/\1/p' || echo "N/A")
             echo -e "${GREEN}✅ RPC 连接正常（区块: ${BLOCK_NUMBER}）${NC}"
             RPC_CONNECTED=true
         else
@@ -90,7 +90,7 @@ else
     RPC_CHECK=$(cast block latest --rpc-url "$RPC_URL" 2>&1)
     RPC_ERROR=$?
     if [ $RPC_ERROR -eq 0 ] && [ -n "$RPC_CHECK" ] && ! echo "$RPC_CHECK" | grep -q "Error\|error\|ERROR"; then
-        BLOCK_NUMBER=$(echo "$RPC_CHECK" | head -1 | grep -oP 'number:\s*\K[0-9]+' || echo "N/A")
+        BLOCK_NUMBER=$(echo "$RPC_CHECK" | head -1 | sed -n 's/.*number:[[:space:]]*\([0-9]*\).*/\1/p' || echo "N/A")
         echo -e "${GREEN}✅ RPC 连接正常（区块: ${BLOCK_NUMBER}）${NC}"
         RPC_CONNECTED=true
     fi

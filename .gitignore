@@ -40,3 +40,10 @@ resource_errors.json
 _corpus/
 crytic-export/
 slither_results.json
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local

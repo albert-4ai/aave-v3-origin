@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-aave-dark text-gray-100 font-mono antialiased;
+    background: 
+      radial-gradient(ellipse at 20% 20%, rgba(182, 80, 158, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(46, 186, 198, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(27, 32, 48, 1) 0%, #0f1318 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  
+  :root {
+    --border: 240 3.7% 15.9%;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-aave-navy/40 backdrop-blur-md border border-white/5 rounded-xl p-6 shadow-xl;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-aave-purple to-aave-teal px-6 py-3 rounded-lg font-medium 
+           text-white transition-all duration-300 hover:shadow-lg hover:shadow-aave-purple/25
+           hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
+           disabled:hover:scale-100 disabled:hover:shadow-none;
+  }
+  
+  .btn-secondary {
+    @apply bg-white/5 border border-white/10 px-6 py-3 rounded-lg font-medium 
+           text-white transition-all duration-300 hover:bg-white/10 hover:border-white/20
+           active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-600 to-red-500 px-6 py-3 rounded-lg font-medium 
+           text-white transition-all duration-300 hover:shadow-lg hover:shadow-red-500/25
+           hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .input-field {
+    @apply w-full bg-aave-dark/50 border border-white/10 rounded-lg px-4 py-3
+           text-white placeholder-gray-500 focus:outline-none focus:border-aave-teal/50
+           focus:ring-1 focus:ring-aave-teal/30 transition-all duration-300;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-gray-400 mb-2;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-aave-purple via-aave-teal to-aave-green bg-clip-text text-transparent;
+  }
+  
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-success {
+    @apply status-badge bg-aave-green/20 text-aave-green border border-aave-green/30;
+  }
+  
+  .status-warning {
+    @apply status-badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+  
+  .status-error {
+    @apply status-badge bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+  
+  .tab-active {
+    @apply text-white border-b-2 border-aave-teal;
+  }
+  
+  .tab-inactive {
+    @apply text-gray-400 border-b-2 border-transparent hover:text-gray-300 hover:border-gray-600;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation: animateIn 0.5s ease-out forwards;
+  }
+  
+  @keyframes animateIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
