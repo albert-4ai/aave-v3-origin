@@ -128,3 +128,47 @@ export function useReservesList() {
   }
 }
 
+export function useReserveData(assetAddress: Address | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACT_ADDRESSES.POOL,
+    abi: PoolABI,
+    functionName: 'getReserveData',
+    args: assetAddress ? [assetAddress] : undefined,
+    query: {
+      enabled: !!assetAddress && CONTRACT_ADDRESSES.POOL !== '0x0000000000000000000000000000000000000000',
+    },
+  })
+
+  // Parse reserve data
+  const parseData = () => {
+    if (!data) return null
+    
+    // Extract rates (in RAY = 1e27)
+    const liquidityRate = data.currentLiquidityRate
+    const variableBorrowRate = data.currentVariableBorrowRate
+    
+    // Convert RAY to percentage (divide by 1e25 to get %)
+    const supplyAPY = Number(liquidityRate) / 1e25
+    const borrowAPY = Number(variableBorrowRate) / 1e25
+    
+    return {
+      aTokenAddress: data.aTokenAddress,
+      variableDebtTokenAddress: data.variableDebtTokenAddress,
+      liquidityIndex: data.liquidityIndex,
+      variableBorrowIndex: data.variableBorrowIndex,
+      supplyAPY: supplyAPY.toFixed(2),
+      borrowAPY: borrowAPY.toFixed(2),
+      lastUpdateTimestamp: data.lastUpdateTimestamp,
+      accruedToTreasury: data.accruedToTreasury,
+    }
+  }
+
+  return {
+    data: parseData(),
+    rawData: data,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+

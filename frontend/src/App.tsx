@@ -1,19 +1,32 @@
 import { useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useChainId } from 'wagmi'
+import { sepolia } from 'wagmi/chains'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import AdminPanel from './components/AdminPanel'
 import BankSupply from './components/BankSupply'
 import UserLending from './components/UserLending'
+import PoolOverview from './components/PoolOverview'
 import { useACLRoles } from './hooks/useACLRoles'
 
-type TabType = 'admin' | 'bank' | 'user'
+type TabType = 'pool' | 'user' | 'bank' | 'admin'
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('user')
+  const [activeTab, setActiveTab] = useState<TabType>('pool')
   const { isConnected, address } = useAccount()
-  const { isPoolAdmin, isLiquidityAdmin, isApprovedUser } = useACLRoles(address)
+  const chainId = useChainId()
+  const { isPoolAdmin, isLiquidityAdmin, isApprovedUser, isLoading, error } = useACLRoles(address)
+  
+  // Debug logging (可以在生产环境中移除)
+  console.log('=== Debug Info ===')
+  console.log('Connected:', isConnected)
+  console.log('Address:', address)
+  console.log('Chain ID:', chainId)
+  console.log('isPoolAdmin:', isPoolAdmin)
+  console.log('isLoading:', isLoading)
+  console.log('error:', error)
 
   const tabs = [
+    { id: 'pool' as const, label: 'Pool Overview', icon: '📊' },
     { id: 'user' as const, label: 'User Lending', icon: '💰' },
     { id: 'bank' as const, label: 'Bank Supply', icon: '🏦' },
     { id: 'admin' as const, label: 'Admin Panel', icon: '⚙️' },
@@ -40,6 +53,16 @@ function App() {
             <div className="flex items-center gap-4">
               {isConnected && (
                 <div className="flex items-center gap-2 text-xs">
+                  {/* Debug: Show chain ID */}
+                  <span className={`px-2 py-1 rounded text-xs ${chainId === sepolia.id ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    Chain: {chainId} {chainId !== sepolia.id && '(需要 Sepolia)'}
+                  </span>
+                  {isLoading && (
+                    <span className="text-yellow-400">加载中...</span>
+                  )}
+                  {error && (
+                    <span className="text-red-400">错误!</span>
+                  )}
                   {isPoolAdmin && (
                     <span className="status-success">Pool Admin</span>
                   )}
@@ -48,6 +71,9 @@ function App() {
                   )}
                   {isApprovedUser && (
                     <span className="status-success">Approved User</span>
+                  )}
+                  {!isPoolAdmin && !isLiquidityAdmin && !isApprovedUser && !isLoading && (
+                    <span className="text-gray-500">无角色</span>
                   )}
                 </div>
               )}
@@ -103,9 +129,10 @@ function App() {
 
             {/* Tab Content */}
             <div className="animate-in">
-              {activeTab === 'admin' && <AdminPanel />}
-              {activeTab === 'bank' && <BankSupply />}
+              {activeTab === 'pool' && <PoolOverview />}
               {activeTab === 'user' && <UserLending />}
+              {activeTab === 'bank' && <BankSupply />}
+              {activeTab === 'admin' && <AdminPanel />}
             </div>
           </div>
         )}
@@ -115,7 +142,7 @@ function App() {
       <footer className="border-t border-white/5 mt-auto py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-gray-500 text-sm">
-            Built on Aave V3 Protocol • Local Development Environment
+            Built on Aave V3 Protocol • Sepolia Testnet
           </p>
         </div>
       </footer>

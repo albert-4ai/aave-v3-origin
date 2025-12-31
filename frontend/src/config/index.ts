@@ -1,4 +1,4 @@
-export { config, anvilChain } from './wagmi'
+export { config } from './wagmi'
 export {
   CONTRACT_ADDRESSES,
   TOKEN_CONFIG,

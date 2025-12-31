@@ -184,7 +184,7 @@ contract Setup is BaseTest, DefaultMarketInput {
     }
 
     // Grant roles to all actors for supply and borrow operations
-    ACLManager aclManager = ACLManager(report.aclManager);
+    ACLManager aclManager = ACLManager(address(contracts.aclManager));
     vm.startPrank(poolAdmin);
     for (uint256 i; i < actorAddresses.length; i++) {
       aclManager.addLiquidityAdmin(actorAddresses[i]);

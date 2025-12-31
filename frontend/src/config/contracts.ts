@@ -1,35 +1,73 @@
 import { Address } from 'viem'
 
 /**
- * Contract addresses for the deployed Aave V3 protocol
+ * Contract addresses for the deployed Aave V3 protocol on Sepolia testnet
  * 
- * NOTE: These addresses need to be updated after deploying the contracts locally.
- * Run the deployment script and update these values from the deployment output.
+ * IMPORTANT: Update these addresses after deploying contracts to Sepolia testnet.
  * 
- * Example deployment command:
- * ```bash
- * forge script scripts/DeployAaveV3MarketBatched.sol --rpc-url http://localhost:8545 --broadcast
- * ```
+ * Steps to update:
+ * 1. Deploy contracts to Sepolia:
+ *    ```bash
+ *    ./deploy/scripts/deploy.sh sepolia
+ *    ```
+ * 
+ * 2. Extract addresses from the latest deployment report:
+ *    ```bash
+ *    LATEST_REPORT=$(ls -t reports/*-market-deployment.json | head -1)
+ *    cat $LATEST_REPORT | jq '{
+ *      poolProxy: .poolProxy,
+ *      poolConfiguratorProxy: .poolConfiguratorProxy,
+ *      aclManager: .aclManager,
+ *      aaveOracle: .aaveOracle,
+ *      protocolDataProvider: .protocolDataProvider,
+ *      poolAddressesProvider: .poolAddressesProvider
+ *    }'
+ *    ```
+ * 
+ * 3. Update the addresses below with the values from the deployment report.
+ * 
+ * Address mapping:
+ * - poolAddressesProvider -> POOL_ADDRESSES_PROVIDER
+ * - poolProxy -> POOL
+ * - poolConfiguratorProxy -> POOL_CONFIGURATOR
+ * - aclManager -> ACL_MANAGER
+ * - protocolDataProvider -> PROTOCOL_DATA_PROVIDER
+ * - aaveOracle -> ORACLE
  */
 export const CONTRACT_ADDRESSES = {
-  // Core Protocol
-  POOL_ADDRESSES_PROVIDER: '0x9bd03768a7DCc129555dE410FF8E85528A4F88b5' as Address,
-  POOL: '0xb14D33721D921fA72Eae56EfE9149caF7C7f2736' as Address, // poolProxy
-  POOL_CONFIGURATOR: '0xcdA074FebAd146910539E2B12D0Fc80acF4359d9' as Address, // poolConfiguratorProxy
-  ACL_MANAGER: '0x0433d874a28147DB0b330C000fcC50C0f0BaF425' as Address,
+  // Core Protocol - Sepolia deployment addresses
+  POOL_ADDRESSES_PROVIDER: '0xaE233EF86d57401e6604a75f7de2D39A0aF9e4F1' as Address, // From deployment report: poolAddressesProvider
+  POOL: '0x404B2FCb457687aaCE9fe40B03f70E5223f23D1d' as Address,                     // From deployment report: poolProxy
+  POOL_CONFIGURATOR: '0x48524e095f383a7A9a6cd116b1F196D3248dA065' as Address,        // From deployment report: poolConfiguratorProxy
+  ACL_MANAGER: '0xd67ABBf84c2f70259c23Cc3170D53C162c4f0AB3' as Address,              // From deployment report: aclManager
   
   // Protocol Data
-  PROTOCOL_DATA_PROVIDER: '0x32467b43BFa67273FC7dDda0999Ee9A12F2AaA08' as Address,
-  ORACLE: '0x6F1216D1BFe15c98520CA1434FC1d9D57AC95321' as Address,
+  PROTOCOL_DATA_PROVIDER: '0xa309160cC7564C9c1E582f11f7098E820622734c' as Address,   // From deployment report: protocolDataProvider
+  ORACLE: '0x703c3b23FA26C70E749c703CF08d99a595CBCb85' as Address,                   // From deployment report: aaveOracle
   
-  // Test Tokens
-  // NOTE: Token addresses need to be obtained from Pool.getReservesList() after listing assets
-  // Or check the test listing contract deployment output
-  // You can query them using: await poolContract.getReservesList()
+  // Test Tokens - Sepolia testnet token addresses
+  // IMPORTANT: Use token addresses deployed on Sepolia testnet, not mainnet addresses
+  // 
+  // Option 1: Use official test tokens on Sepolia (if available)
+  // Option 2: Deploy your own test tokens to Sepolia and use those addresses
+  // 
+  // To find or verify Sepolia token addresses:
+  // - Check Sepolia Etherscan: https://sepolia.etherscan.io
+  // - Search for token contracts on Sepolia
+  // - Or deploy test tokens using scripts/MintUSDC.sol
   TOKENS: {
-    DAI: '0x0000000000000000000000000000000000000000' as Address, // Update after asset listing
-    USDC: '0x0000000000000000000000000000000000000000' as Address, // Update after asset listing
-    WETH: '0x0000000000000000000000000000000000000000' as Address, // Update after asset listing
+    // WETH9 on Sepolia (official wrapped ETH contract)
+    // This is the standard WETH9 contract address on Sepolia testnet
+    WETH: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9' as Address,
+    // USDC on Sepolia testnet - Circle Official USDC
+    // This is the official Circle USDC that was listed in the Aave Pool
+    // Verify on Sepolia Etherscan: https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+    USDC: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238' as Address,
+    // DAI on Sepolia
+    // If you need DAI, either:
+    // 1. Find an existing DAI test token on Sepolia (check Etherscan)
+    // 2. Deploy your own test DAI token
+    DAI: '0x0000000000000000000000000000000000000000' as Address, // Update with Sepolia DAI address
   },
 } as const
 

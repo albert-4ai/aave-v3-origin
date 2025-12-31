@@ -76,7 +76,7 @@ arbitrum = { key = "${ETHERSCAN_API_KEY_ARBITRUM}", chainId = 42161 }
 # fantom = { key = "${ETHERSCAN_API_KEY_FANTOM}", chainId = 250 }
 scroll = { key = "${ETHERSCAN_API_KEY_SCROLL}", chainId = 534352, url = 'https://api.scrollscan.com/api\?' }
 # celo = { key = "${ETHERSCAN_API_KEY_CELO}", chainId = 42220 }
-# sepolia = { key = "${ETHERSCAN_API_KEY_MAINNET}", chainId = 11155111 }
+sepolia = { key = "${ETHERSCAN_API_KEY_SEPOLIA}", chainId = 11155111, url = 'https://api-sepolia.etherscan.io/api' }
 # mumbai = { key = "${ETHERSCAN_API_KEY_POLYGON}", chainId = 80001 }
 # amoy = { key = "${ETHERSCAN_API_KEY_POLYGON}", chainId = 80002 }
 # bnb_testnet = { key = "${ETHERSCAN_API_KEY_BNB}", chainId = 97, url = 'https://api-testnet.bscscan.com/api' }

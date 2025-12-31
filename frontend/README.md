@@ -21,8 +21,9 @@ A React-based frontend for the Aave V3 private bank lending system. This applica
 ## Prerequisites
 
 - Node.js 18+
-- Running Anvil instance (local Ethereum node)
-- Deployed Aave V3 contracts
+- MetaMask or other Web3 wallet
+- Sepolia testnet ETH (for gas fees)
+- Deployed Aave V3 contracts on Sepolia testnet
 
 ## Setup
 
@@ -33,20 +34,48 @@ cd frontend
 npm install
 ```
 
-2. **Configure contract addresses:**
+2. **Configure environment variables (optional):**
 
-After deploying contracts, update the addresses in `src/config/contracts.ts`:
+Create a `.env` file in the frontend directory for better RPC performance:
+
+```bash
+# Optional: Use your own Sepolia RPC endpoint for better performance
+# Get API key from https://www.alchemy.com/ or https://www.infura.io/
+VITE_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+
+# Optional: Use your own WalletConnect project ID
+# Get from https://cloud.walletconnect.com (free)
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id
+
+# Debug logging
+VITE_DEBUG=false
+```
+
+Vite will automatically load this `.env` file when running the development server.
+
+3. **Contract addresses are pre-configured:**
+
+The contract addresses are already configured for Sepolia testnet deployment:
 
 ```typescript
 export const CONTRACT_ADDRESSES = {
-  POOL_ADDRESSES_PROVIDER: '0x...',
-  POOL: '0x...',
-  ACL_MANAGER: '0x...',
+  POOL_ADDRESSES_PROVIDER: '0xaE233EF86d57401e6604a75f7de2D39A0aF9e4F1',
+  POOL: '0x404B2FCb457687aaCE9fe40B03f70E5223f23D1d',
+  POOL_CONFIGURATOR: '0x48524e095f383a7A9a6cd116b1F196D3248dA065',
+  ACL_MANAGER: '0xd67ABBf84c2f70259c23Cc3170D53C162c4f0AB3',
+  PROTOCOL_DATA_PROVIDER: '0xa309160cC7564C9c1E582f11f7098E820622734c',
+  ORACLE: '0x703c3b23FA26C70E749c703CF08d99a595CBCb85',
   // ... other addresses
 }
 ```
 
-3. **Start the development server:**
+**USDC is already registered** in the Aave pool with the following configuration:
+- Asset: `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`
+- LTV: 82.5%
+- Liquidation Threshold: 86%
+- Reserve Factor: 10%
+
+4. **Start the development server:**
 
 ```bash
 npm run dev
@@ -56,23 +85,23 @@ The app will be available at `http://localhost:3000`
 
 ## Development Workflow
 
-### 1. Start Anvil (Local Blockchain)
+### 1. Get Sepolia Testnet ETH
 
-```bash
-# In project root
-anvil --host 0.0.0.0 --port 8545
-```
+Get testnet ETH from a Sepolia faucet:
+- [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
+- [Infura Sepolia Faucet](https://www.infura.io/faucet/sepolia)
 
-### 2. Deploy Contracts
+### 2. Configure MetaMask for Sepolia
 
-```bash
-# In project root
-forge script scripts/DeployAaveV3MarketBatched.sol --rpc-url http://localhost:8545 --broadcast
-```
+Add Sepolia testnet to MetaMask:
+- Network Name: Sepolia
+- RPC URL: https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+- Chain ID: 11155111
+- Currency Symbol: SepoliaETH
 
-### 3. Update Contract Addresses
+### 3. Import Test Account
 
-Copy the deployed contract addresses from the deployment output to `src/config/contracts.ts`.
+Import one of the test accounts from your deployment into MetaMask to get admin privileges.
 
 ### 4. Start Frontend
 
@@ -108,11 +137,46 @@ frontend/
 
 ## Connecting Wallet
 
-The app uses RainbowKit for wallet connection. For local development with Anvil:
+The app uses RainbowKit for wallet connection. For Sepolia testnet:
 
-1. Import one of Anvil's test accounts into MetaMask
-2. Add the local network (Chain ID: 31337, RPC: http://127.0.0.1:8545)
+1. Ensure MetaMask is configured for Sepolia testnet
+2. Import your deployment account or any account with testnet ETH
 3. Connect via the app's Connect button
+4. The app will automatically detect and use the Sepolia network
+
+### Getting Admin Roles
+
+To access admin features, your connected account needs appropriate roles:
+
+- **Pool Admin**: Can grant/revoke other roles (automatically has this if you deployed the contracts)
+- **Liquidity Admin**: Can supply/withdraw bank liquidity
+- **Approved User**: Can use lending/borrowing features
+
+Use the Admin Panel in the app to manage roles.
+
+## Getting Test Tokens
+
+### USDC on Sepolia
+
+USDC is already configured in the protocol at: `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`
+
+To get USDC test tokens:
+```bash
+# In project root, run the mint script
+./deploy/scripts/mint-usdc.sh [amount]
+```
+
+Or manually mint using cast:
+```bash
+cast send 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 \
+  "mint(address,uint256)" $YOUR_ADDRESS $AMOUNT \
+  --rpc-url sepolia \
+  --private-key $PRIVATE_KEY
+```
+
+### Sepolia ETH
+
+Use Sepolia faucets to get test ETH for gas fees.
 
 ## Role Hierarchy
 

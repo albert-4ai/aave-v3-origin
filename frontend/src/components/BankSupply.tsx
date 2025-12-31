@@ -7,12 +7,43 @@ import { useACLRoles, useTokenBalance, useTokenAllowance, useReservesList } from
 
 type ActionType = 'supply' | 'withdraw'
 
+// Parse error message for user-friendly display
+function parseErrorMessage(error: Error | null): string {
+  if (!error) return ''
+  
+  const message = error.message || ''
+  
+  // Common Aave error patterns
+  if (message.includes('TRANSFER_AMOUNT_EXCEEDS_BALANCE')) {
+    return 'Insufficient token balance'
+  }
+  if (message.includes('INSUFFICIENT_BALANCE')) {
+    return 'Insufficient balance to complete this operation'
+  }
+  if (message.includes('CALLER_NOT_LIQUIDITY_ADMIN')) {
+    return 'You are not a liquidity admin. Contact the Pool Admin.'
+  }
+  if (message.includes('User rejected') || message.includes('user rejected')) {
+    return 'Transaction was rejected by user'
+  }
+  if (message.includes('execution reverted')) {
+    const match = message.match(/reason: ([^"]+)/) || message.match(/reverted: ([^"]+)/)
+    if (match) {
+      return match[1]
+    }
+    return 'Transaction failed - the contract reverted the operation'
+  }
+  
+  return message.length > 100 ? message.slice(0, 100) + '...' : message
+}
+
 export default function BankSupply() {
   const { address } = useAccount()
-  const { isLiquidityAdmin } = useACLRoles(address)
-  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKEN_CONFIG>('DAI')
+  const { isLiquidityAdmin, isLoading: isLoadingRole } = useACLRoles(address)
+  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKEN_CONFIG>('USDC')
   const [amount, setAmount] = useState('')
   const [action, setAction] = useState<ActionType>('supply')
+  const [showPermissionWarning, setShowPermissionWarning] = useState(false)
 
   const tokenAddress = CONTRACT_ADDRESSES.TOKENS[selectedToken]
   const { formattedBalance, decimals, refetch: refetchBalance } = useTokenBalance(
@@ -28,11 +59,15 @@ export default function BankSupply() {
   const { reserves } = useReservesList()
 
   // Write contract hooks
-  const { data: approveHash, writeContract: writeApprove, isPending: isApproving } = useWriteContract()
-  const { data: actionHash, writeContract: writeAction, isPending: isActioning, error: actionError } = useWriteContract()
+  const { data: approveHash, writeContract: writeApprove, isPending: isApproving, error: approveError, reset: resetApprove } = useWriteContract()
+  const { data: actionHash, writeContract: writeAction, isPending: isActioning, error: actionError, reset: resetAction } = useWriteContract()
   
-  const { isLoading: isApprovingTx, isSuccess: approveSuccess } = useWaitForTransactionReceipt({ hash: approveHash })
-  const { isLoading: isActioningTx, isSuccess: actionSuccess } = useWaitForTransactionReceipt({ hash: actionHash })
+  const { isLoading: isApprovingTx, isSuccess: approveSuccess, error: approveTxError } = useWaitForTransactionReceipt({ hash: approveHash })
+  const { isLoading: isActioningTx, isSuccess: actionSuccess, error: actionTxError } = useWaitForTransactionReceipt({ hash: actionHash })
+
+  // Combined error state
+  const [showError, setShowError] = useState(false)
+  const currentError = actionError || approveError || actionTxError || approveTxError
 
   // Refetch data after successful transaction
   useEffect(() => {
@@ -42,10 +77,42 @@ export default function BankSupply() {
     }
   }, [approveSuccess, actionSuccess, refetchBalance, refetchAllowance])
 
+  // Show error when it occurs
+  useEffect(() => {
+    if (currentError) {
+      setShowError(true)
+      console.error('Transaction error:', currentError)
+    }
+  }, [currentError])
+
+  // Clear error after 10 seconds
+  useEffect(() => {
+    if (showError) {
+      const timer = setTimeout(() => {
+        setShowError(false)
+        resetApprove()
+        resetAction()
+      }, 10000)
+      return () => clearTimeout(timer)
+    }
+  }, [showError, resetApprove, resetAction])
+
+  // Hide warning after 5 seconds
+  useEffect(() => {
+    if (showPermissionWarning) {
+      const timer = setTimeout(() => setShowPermissionWarning(false), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [showPermissionWarning])
+
   const parsedAmount = amount ? parseUnits(amount, decimals) : 0n
   const needsApproval = action === 'supply' && parsedAmount > allowance
 
   const handleApprove = () => {
+    if (!isLiquidityAdmin) {
+      setShowPermissionWarning(true)
+      return
+    }
     writeApprove({
       address: tokenAddress,
       abi: ERC20ABI,
@@ -56,6 +123,12 @@ export default function BankSupply() {
 
   const handleAction = () => {
     if (!address) return
+    
+    // Check permission before action
+    if (!isLiquidityAdmin) {
+      setShowPermissionWarning(true)
+      return
+    }
 
     if (action === 'supply') {
       writeAction({
@@ -74,27 +147,63 @@ export default function BankSupply() {
     }
   }
 
-  if (!isLiquidityAdmin) {
-    return (
-      <div className="card">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="w-16 h-16 mb-4 rounded-full bg-yellow-500/10 flex items-center justify-center">
-            <span className="text-3xl">🏦</span>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Liquidity Admin Required</h3>
-          <p className="text-gray-400 text-center max-w-md">
-            You need Liquidity Admin privileges to supply or withdraw liquidity.
-            Contact your Pool Admin to get access.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
+      {/* Role Status Banner */}
+      <div className={`p-4 rounded-xl border ${
+        isLiquidityAdmin 
+          ? 'bg-aave-green/10 border-aave-green/30' 
+          : 'bg-yellow-500/10 border-yellow-500/30'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              isLiquidityAdmin ? 'bg-aave-green/20' : 'bg-yellow-500/20'
+            }`}>
+              <span className="text-xl">{isLiquidityAdmin ? '✓' : '⚠️'}</span>
+            </div>
+            <div>
+              <div className="font-semibold">
+                {isLoadingRole ? 'Checking role...' : (
+                  isLiquidityAdmin ? 'Liquidity Admin Access' : 'No Liquidity Admin Role'
+                )}
+              </div>
+              <div className="text-sm text-gray-400">
+                {isLiquidityAdmin 
+                  ? 'You can supply and withdraw liquidity from the pool'
+                  : 'You need Liquidity Admin role to perform supply/withdraw operations'
+                }
+              </div>
+            </div>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+            isLiquidityAdmin 
+              ? 'bg-aave-green/20 text-aave-green' 
+              : 'bg-yellow-500/20 text-yellow-400'
+          }`}>
+            {isLiquidityAdmin ? 'LIQUIDITY_ADMIN' : 'NO ROLE'}
+          </div>
+        </div>
+      </div>
+
+      {/* Permission Warning Alert */}
+      {showPermissionWarning && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 animate-in">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🚫</span>
+            <div>
+              <div className="font-semibold text-red-400">Permission Denied</div>
+              <div className="text-sm text-gray-400">
+                You need <span className="text-red-400 font-mono">LIQUIDITY_ADMIN</span> role to perform this action. 
+                Contact the Pool Admin to get access.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Overview */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="card">
           <div className="text-sm text-gray-400 mb-1">Your Balance</div>
           <div className="text-2xl font-semibold">
@@ -113,6 +222,13 @@ export default function BankSupply() {
           <div className="text-sm text-gray-400 mb-1">Listed Reserves</div>
           <div className="text-2xl font-semibold">{reserves.length}</div>
           <div className="text-sm text-gray-500">Assets</div>
+        </div>
+        <div className="card">
+          <div className="text-sm text-gray-400 mb-1">Role Status</div>
+          <div className={`text-2xl font-semibold ${isLiquidityAdmin ? 'text-aave-green' : 'text-yellow-400'}`}>
+            {isLiquidityAdmin ? '✓ Active' : '✗ None'}
+          </div>
+          <div className="text-sm text-gray-500">Liquidity Admin</div>
         </div>
       </div>
 
@@ -194,13 +310,23 @@ export default function BankSupply() {
           </div>
         </div>
 
+        {/* No Permission Notice */}
+        {!isLiquidityAdmin && (
+          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 mb-4">
+            <div className="flex items-center gap-2 text-yellow-400 text-sm">
+              <span>⚠️</span>
+              <span>You need <span className="font-mono font-semibold">LIQUIDITY_ADMIN</span> role to execute transactions</span>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="space-y-3">
           {needsApproval && (
             <button
               onClick={handleApprove}
               disabled={isApproving || isApprovingTx}
-              className="btn-secondary w-full"
+              className={`w-full ${isLiquidityAdmin ? 'btn-secondary' : 'btn-secondary opacity-60 cursor-not-allowed'}`}
             >
               {isApproving || isApprovingTx ? (
                 <span className="flex items-center justify-center gap-2">
@@ -211,7 +337,10 @@ export default function BankSupply() {
                   Approving...
                 </span>
               ) : (
-                `Approve ${TOKEN_CONFIG[selectedToken].symbol}`
+                <>
+                  {!isLiquidityAdmin && <span className="mr-2">🔒</span>}
+                  Approve {TOKEN_CONFIG[selectedToken].symbol}
+                </>
               )}
             </button>
           )}
@@ -219,7 +348,7 @@ export default function BankSupply() {
           <button
             onClick={handleAction}
             disabled={isActioning || isActioningTx || !amount || (needsApproval && !approveSuccess)}
-            className="btn-primary w-full"
+            className={`w-full ${isLiquidityAdmin ? 'btn-primary' : 'btn-primary opacity-60'}`}
           >
             {isActioning || isActioningTx ? (
               <span className="flex items-center justify-center gap-2">
@@ -230,7 +359,10 @@ export default function BankSupply() {
                 Processing...
               </span>
             ) : (
-              `${action === 'supply' ? 'Supply' : 'Withdraw'} ${TOKEN_CONFIG[selectedToken].symbol}`
+              <>
+                {!isLiquidityAdmin && <span className="mr-2">🔒</span>}
+                {action === 'supply' ? 'Supply' : 'Withdraw'} {TOKEN_CONFIG[selectedToken].symbol}
+              </>
             )}
           </button>
         </div>
@@ -238,12 +370,52 @@ export default function BankSupply() {
         {/* Status Messages */}
         {actionSuccess && (
           <div className="mt-4 p-4 rounded-lg bg-aave-green/10 border border-aave-green/30 text-aave-green">
-            ✓ {action === 'supply' ? 'Supply' : 'Withdrawal'} successful!
+            <div className="flex items-center gap-2">
+              <span className="text-xl">✓</span>
+              <span>{action === 'supply' ? 'Supply' : 'Withdrawal'} successful!</span>
+            </div>
           </div>
         )}
-        {actionError && (
-          <div className="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
-            ✗ Error: {actionError.message}
+        
+        {/* Error Alert */}
+        {showError && currentError && (
+          <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 animate-in">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">❌</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-red-400 mb-1">Transaction Failed</div>
+                  <div className="text-sm text-gray-400">
+                    {parseErrorMessage(currentError)}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowError(false)
+                  resetApprove()
+                  resetAction()
+                }}
+                className="text-gray-500 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Helpful suggestions */}
+            <div className="mt-3 pt-3 border-t border-red-500/20">
+              <div className="text-xs text-gray-500">
+                💡 <strong>Suggestions:</strong>
+                <ul className="mt-1 ml-4 list-disc space-y-1">
+                  <li>Check if you have sufficient token balance</li>
+                  <li>Ensure the token is approved for the Pool contract</li>
+                  <li>Verify you have the LIQUIDITY_ADMIN role</li>
+                  <li>Check the browser console for detailed error info</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
       </div>

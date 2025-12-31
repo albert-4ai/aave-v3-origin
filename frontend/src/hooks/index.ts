@@ -4,5 +4,6 @@ export {
   useTokenBalance,
   useTokenAllowance,
   useReservesList,
+  useReserveData,
 } from './usePoolData'
 

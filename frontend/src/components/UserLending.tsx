@@ -7,12 +7,66 @@ import { useACLRoles, useTokenBalance, useTokenAllowance, useUserAccountData } f
 
 type ActionType = 'supply' | 'withdraw' | 'borrow' | 'repay'
 
+// Parse error message for user-friendly display
+function parseErrorMessage(error: Error | null): string {
+  if (!error) return ''
+  
+  const message = error.message || ''
+  const errorString = JSON.stringify(error)
+  
+  // Check for CallerNotApprovedUser error code (0x29c0ce0c)
+  // This is the selector for CallerNotApprovedUser() custom error
+  if (message.includes('0x29c0ce0c') || errorString.includes('0x29c0ce0c')) {
+    return '该地址没有权限进行此操作。请联系管理员获取 Approved User 权限。'
+  }
+  
+  // Common Aave error patterns
+  if (message.includes('TRANSFER_AMOUNT_EXCEEDS_BALANCE')) {
+    return 'Insufficient token balance'
+  }
+  if (message.includes('INSUFFICIENT_BALANCE')) {
+    return 'Insufficient balance to complete this operation'
+  }
+  if (message.includes('HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD')) {
+    return 'This operation would put your position at risk of liquidation'
+  }
+  if (message.includes('COLLATERAL_CANNOT_COVER_NEW_BORROW')) {
+    return 'Not enough collateral to borrow this amount'
+  }
+  if (message.includes('NOT_ENOUGH_AVAILABLE_USER_BALANCE')) {
+    return 'Not enough available balance'
+  }
+  if (message.includes('CALLER_NOT_APPROVED_USER')) {
+    return '该地址没有权限进行此操作。请联系管理员获取 Approved User 权限。'
+  }
+  if (message.includes('User rejected') || message.includes('user rejected')) {
+    return 'Transaction was rejected by user'
+  }
+  if (message.includes('execution reverted')) {
+    // Check for custom error codes in the message
+    if (message.includes('custom error 0x29c0ce0c')) {
+      return '该地址没有权限进行此操作。请联系管理员获取 Approved User 权限。'
+    }
+    // Try to extract the revert reason
+    const match = message.match(/reason: ([^"]+)/) || message.match(/reverted: ([^"]+)/)
+    if (match) {
+      return match[1]
+    }
+    return 'Transaction failed - the contract reverted the operation'
+  }
+  
+  // Default: show first 100 chars of error
+  return message.length > 100 ? message.slice(0, 100) + '...' : message
+}
+
 export default function UserLending() {
   const { address } = useAccount()
   const { isApprovedUser } = useACLRoles(address)
-  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKEN_CONFIG>('DAI')
+  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKEN_CONFIG>('USDC')
   const [amount, setAmount] = useState('')
   const [action, setAction] = useState<ActionType>('supply')
+  const [showError, setShowError] = useState(false)
+  const [showPermissionWarning, setShowPermissionWarning] = useState(false)
 
   const tokenAddress = CONTRACT_ADDRESSES.TOKENS[selectedToken]
   const { formattedBalance, decimals, refetch: refetchBalance } = useTokenBalance(
@@ -27,11 +81,14 @@ export default function UserLending() {
   const { data: accountData, refetch: refetchAccountData } = useUserAccountData(address)
 
   // Write contract hooks
-  const { data: approveHash, writeContract: writeApprove, isPending: isApproving } = useWriteContract()
-  const { data: actionHash, writeContract: writeAction, isPending: isActioning, error: actionError } = useWriteContract()
+  const { data: approveHash, writeContract: writeApprove, isPending: isApproving, error: approveError, reset: resetApprove } = useWriteContract()
+  const { data: actionHash, writeContract: writeAction, isPending: isActioning, error: actionError, reset: resetAction } = useWriteContract()
   
-  const { isLoading: isApprovingTx, isSuccess: approveSuccess } = useWaitForTransactionReceipt({ hash: approveHash })
-  const { isLoading: isActioningTx, isSuccess: actionSuccess } = useWaitForTransactionReceipt({ hash: actionHash })
+  const { isLoading: isApprovingTx, isSuccess: approveSuccess, error: approveTxError } = useWaitForTransactionReceipt({ hash: approveHash })
+  const { isLoading: isActioningTx, isSuccess: actionSuccess, error: actionTxError } = useWaitForTransactionReceipt({ hash: actionHash })
+
+  // Combined error state
+  const currentError = actionError || approveError || actionTxError || approveTxError
 
   // Refetch data after successful transaction
   useEffect(() => {
@@ -42,10 +99,44 @@ export default function UserLending() {
     }
   }, [approveSuccess, actionSuccess, refetchBalance, refetchAllowance, refetchAccountData])
 
+  // Show error when it occurs
+  useEffect(() => {
+    if (currentError) {
+      setShowError(true)
+      console.error('Transaction error:', currentError)
+    }
+  }, [currentError])
+
+  // Auto-hide permission warning after 5 seconds
+  useEffect(() => {
+    if (showPermissionWarning) {
+      const timer = setTimeout(() => {
+        setShowPermissionWarning(false)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [showPermissionWarning])
+
+  // Clear error after 10 seconds
+  useEffect(() => {
+    if (showError) {
+      const timer = setTimeout(() => {
+        setShowError(false)
+        resetApprove()
+        resetAction()
+      }, 10000)
+      return () => clearTimeout(timer)
+    }
+  }, [showError, resetApprove, resetAction])
+
   const parsedAmount = amount ? parseUnits(amount, decimals) : 0n
   const needsApproval = (action === 'supply' || action === 'repay') && parsedAmount > allowance
 
   const handleApprove = () => {
+    if (!isApprovedUser) {
+      setShowPermissionWarning(true)
+      return
+    }
     writeApprove({
       address: tokenAddress,
       abi: ERC20ABI,
@@ -56,6 +147,12 @@ export default function UserLending() {
 
   const handleAction = () => {
     if (!address) return
+    
+    // Check permission before sending transaction
+    if (!isApprovedUser) {
+      setShowPermissionWarning(true)
+      return
+    }
 
     switch (action) {
       case 'supply':
@@ -112,6 +209,31 @@ export default function UserLending() {
 
   return (
     <div className="space-y-6">
+      {/* Permission Warning Alert */}
+      {showPermissionWarning && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 animate-in">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-xl">⚠️</span>
+              </div>
+              <div>
+                <div className="font-semibold text-red-400 mb-1">权限不足</div>
+                <div className="text-sm text-gray-400">
+                  该地址没有权限进行 {action === 'supply' ? 'supply' : action === 'withdraw' ? 'withdraw' : action === 'borrow' ? 'borrow' : 'repay'} 操作。请联系管理员获取 Approved User 权限。
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowPermissionWarning(false)}
+              className="text-gray-500 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Account Overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card">
@@ -271,16 +393,55 @@ export default function UserLending() {
         {/* Status Messages */}
         {actionSuccess && (
           <div className="mt-4 p-4 rounded-lg bg-aave-green/10 border border-aave-green/30 text-aave-green">
-            ✓ {action.charAt(0).toUpperCase() + action.slice(1)} successful!
+            <div className="flex items-center gap-2">
+              <span className="text-xl">✓</span>
+              <span>{action.charAt(0).toUpperCase() + action.slice(1)} successful!</span>
+            </div>
           </div>
         )}
-        {actionError && (
-          <div className="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
-            ✗ Error: {actionError.message}
+        
+        {/* Error Alert */}
+        {showError && currentError && (
+          <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 animate-in">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">❌</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-red-400 mb-1">Transaction Failed</div>
+                  <div className="text-sm text-gray-400">
+                    {parseErrorMessage(currentError)}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowError(false)
+                  resetApprove()
+                  resetAction()
+                }}
+                className="text-gray-500 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Helpful suggestions based on error */}
+            <div className="mt-3 pt-3 border-t border-red-500/20">
+              <div className="text-xs text-gray-500">
+                💡 <strong>Suggestions:</strong>
+                <ul className="mt-1 ml-4 list-disc space-y-1">
+                  <li>Check if you have sufficient token balance</li>
+                  <li>Ensure the token is approved for the Pool contract</li>
+                  <li>Verify you have the required role (Approved User)</li>
+                  <li>Check the browser console for detailed error info</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
       </div>
     </div>
   )
 }
-
